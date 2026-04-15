@@ -239,10 +239,19 @@
       'https://media.giphy.com/media/3oriO0OEd9QIDdllqo/giphy.gif'
     ];
     var catGifs = defaultGifs;
-    try {
-      var stored = JSON.parse(localStorage.getItem('pawse_pawcam_gifs'));
-      if (stored && stored.length > 0) catGifs = stored;
-    } catch(e) {}
+
+    // load from API, fallback to localStorage
+    (async function() {
+      try {
+        var stored = await pawseApi.get('pawcam_gifs');
+        if (stored && stored.length > 0) catGifs = stored;
+      } catch(e) {
+        try {
+          var local = JSON.parse(localStorage.getItem('pawse_pawcam_gifs'));
+          if (local && local.length > 0) catGifs = local;
+        } catch(e2) {}
+      }
+    })();
 
     var cam = document.getElementById('pawcam');
     var titlebar = document.getElementById('pawcam-titlebar');

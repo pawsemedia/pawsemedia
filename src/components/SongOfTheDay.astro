@@ -215,25 +215,21 @@ const { title = "Track Title", artist = "Artist" } = Astro.props;
     }
 
     // load song data — check playlist for daily rotation
-    try {
-      var song = JSON.parse(localStorage.getItem('pawse_song'));
-      var playlist = JSON.parse(localStorage.getItem('pawse_playlist')) || [];
+    async function loadSong() {
+      var song = await pawseApi.get('song');
+      var playlist = await pawseApi.get('playlist') || [];
 
-      // if there's a playlist, pick today's song based on the day
       if (playlist.length > 0) {
         var today = new Date();
         var dayKey = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
         var lastRotation = localStorage.getItem('pawse_rotation_day');
 
         if (lastRotation !== dayKey) {
-          // new day — rotate to next song
           var lastIdx = parseInt(localStorage.getItem('pawse_rotation_idx') || '-1');
           var nextIdx = (lastIdx + 1) % playlist.length;
           var pick = playlist[nextIdx];
-
-          // update song of the day
           song = { title: pick.title, artist: pick.artist, url: pick.url };
-          localStorage.setItem('pawse_song', JSON.stringify(song));
+          await pawseApi.set('song', song).catch(function(){});
           localStorage.setItem('pawse_rotation_day', dayKey);
           localStorage.setItem('pawse_rotation_idx', String(nextIdx));
         }
@@ -286,7 +282,8 @@ const { title = "Track Title", artist = "Artist" } = Astro.props;
           }
         }
       }
-    } catch(e) {}
+    }
+    loadSong();
 
     vinyl.classList.add('vinyl--paused');
     audio.volume = volume;

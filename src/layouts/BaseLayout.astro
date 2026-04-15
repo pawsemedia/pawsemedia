@@ -23,6 +23,7 @@ const { title = 'pawse media', showSplash = false } = Astro.props;
     <meta name="description" content="pawse media" />
     <link rel="icon" type="image/png" href="/logo-white.png" />
     <title>{title}</title>
+    <script is:inline src="/pawse-api.js"></script>
   </head>
   <body>
     {showSplash && <Splash />}

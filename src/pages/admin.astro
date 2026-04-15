@@ -296,33 +296,28 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 </style>
 
 <script is:inline>
-  (function() {
+  (async function() {
     var DEFAULT_PW = 'pawse2026';
 
-    function getData(key) {
-      try { return JSON.parse(localStorage.getItem('pawse_' + key)); } catch(e) { return null; }
+    // API-backed getData/setData
+    async function getData(key) {
+      try {
+        var val = await pawseApi.get(key);
+        return val;
+      } catch(e) {
+        try { return JSON.parse(localStorage.getItem('pawse_' + key)); } catch(e2) { return null; }
+      }
     }
-    function setData(key, val) {
-      localStorage.setItem('pawse_' + key, JSON.stringify(val));
+    async function setData(key, val) {
+      try {
+        await pawseApi.set(key, val);
+      } catch(e) {}
+      // always keep localStorage in sync as fallback
+      try { localStorage.setItem('pawse_' + key, JSON.stringify(val)); } catch(e) {}
     }
 
-    // init defaults
-    if (!getData('password')) setData('password', DEFAULT_PW);
-    if (!getData('about')) setData('about', 'this is pawse media. a spot for posts, cool finds, videos, music, and whatever else. run by me and my friends. that\'s about it.');
-    if (!getData('posts')) setData('posts', []);
-    if (!getData('song')) setData('song', { title: 'Track Title', artist: 'Artist', url: '' });
-    if (!getData('playlist')) setData('playlist', []);
-    if (!getData('pawcam_gifs')) setData('pawcam_gifs', [
-      'https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif',
-      'https://media.giphy.com/media/MDJ9IbxxvDUQM/giphy.gif',
-      'https://media.giphy.com/media/VbnUQpnihPSIgIXuZv/giphy.gif',
-      'https://media.giphy.com/media/BzyTuYCmvSORqs1ABM/giphy.gif',
-      'https://media.giphy.com/media/mlvseq9yvZhba/giphy.gif',
-      'https://media.giphy.com/media/ICOgUNjpvO0PC/giphy.gif',
-      'https://media.giphy.com/media/nR4L10XlJcSeQ/giphy.gif',
-      'https://media.giphy.com/media/3oriO0OEd9QIDdllqo/giphy.gif'
-    ]);
-    if (!getData('corner_items')) setData('corner_items', []);
+    // init defaults on server
+    await pawseApi.init();
 
     var gate = document.getElementById('login-gate');
     var panel = document.getElementById('admin-panel');
@@ -331,20 +326,26 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     var loginError = document.getElementById('login-error');
     var logoutBtn = document.getElementById('admin-logout-btn');
 
-    // check if already logged in
-    if (sessionStorage.getItem('pawse_admin') === 'true') {
-      gate.style.display = 'none';
-      panel.style.display = 'block';
-      loadAdmin();
-    }
-
-    loginBtn.addEventListener('click', function() {
-      var pw = getData('password');
-      if (pwInput.value === pw) {
-        sessionStorage.setItem('pawse_admin', 'true');
+    // check if already logged in this session
+    var savedPw = sessionStorage.getItem('pawse_admin_pw');
+    if (savedPw) {
+      var restored = await pawseApi.login(savedPw);
+      if (restored) {
         gate.style.display = 'none';
         panel.style.display = 'block';
-        loadAdmin();
+        await loadAdmin();
+      } else {
+        sessionStorage.removeItem('pawse_admin_pw');
+      }
+    }
+
+    loginBtn.addEventListener('click', async function() {
+      var success = await pawseApi.login(pwInput.value);
+      if (success) {
+        sessionStorage.setItem('pawse_admin_pw', pwInput.value);
+        gate.style.display = 'none';
+        panel.style.display = 'block';
+        await loadAdmin();
       } else {
         loginError.style.display = 'block';
         pwInput.value = '';
@@ -355,8 +356,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       if (e.key === 'Enter') loginBtn.click();
     });
 
-    logoutBtn.addEventListener('click', function() {
+    logoutBtn.addEventListener('click', async function() {
       sessionStorage.removeItem('pawse_admin');
+      sessionStorage.removeItem('pawse_admin_pw');
+      window._pawsePassword = '';
       gate.style.display = 'block';
       panel.style.display = 'none';
       pwInput.value = '';
@@ -367,7 +370,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     var tabs = document.querySelectorAll('.admin-tab');
     var sections = document.querySelectorAll('.admin-section');
     tabs.forEach(function(tab) {
-      tab.addEventListener('click', function() {
+      tab.addEventListener('click', async function() {
         tabs.forEach(function(t) { t.classList.remove('admin-tab--active'); });
         tab.classList.add('admin-tab--active');
         var target = tab.getAttribute('data-tab');
@@ -392,13 +395,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
     // save buttons
     document.querySelectorAll('.admin-save').forEach(function(btn) {
-      btn.addEventListener('click', function() {
+      btn.addEventListener('click', async function() {
         var key = btn.getAttribute('data-save');
         if (key === 'about') {
-          setData('about', document.getElementById('about-text-edit').value);
+          await setData('about', document.getElementById('about-text-edit').value);
           flashSaved('about');
         } else if (key === 'music') {
-          setData('song', {
+          await setData('song', {
             title: document.getElementById('song-title').value,
             artist: document.getElementById('song-artist').value,
             url: document.getElementById('song-url').value
@@ -426,7 +429,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             pwErr.style.display = 'block';
             return;
           }
-          setData('password', np);
+          await setData('password', np);
+          window._pawsePassword = np;
           document.getElementById('safe-word').value = '';
           document.getElementById('new-pw').value = '';
           document.getElementById('confirm-pw').value = '';
@@ -451,21 +455,20 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       createBtn.textContent = 'publish post';
     }
 
-    cancelBtn.addEventListener('click', function() {
+    cancelBtn.addEventListener('click', async function() {
       clearPostForm();
     });
 
-    createBtn.addEventListener('click', function() {
+    createBtn.addEventListener('click', async function() {
       var title = document.getElementById('post-title').value;
       var desc = document.getElementById('post-desc').value;
       var body = document.getElementById('post-body').value;
       if (!title) return;
 
-      var posts = getData('posts') || [];
+      var posts = await getData('posts') || [];
       var editId = editIdEl.value;
 
       if (editId) {
-        // update existing post
         for (var i = 0; i < posts.length; i++) {
           if (String(posts[i].id) === editId) {
             posts[i].title = title;
@@ -475,7 +478,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           }
         }
       } else {
-        // new post
         posts.unshift({
           id: Date.now(),
           title: title,
@@ -486,51 +488,51 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         });
       }
 
-      setData('posts', posts);
+      await setData('posts', posts);
       clearPostForm();
       flashEl(document.getElementById('post-saved'));
-      renderPosts();
+      await renderPosts();
     });
 
     // add to playlist
-    document.getElementById('playlist-add-btn').addEventListener('click', function() {
+    document.getElementById('playlist-add-btn').addEventListener('click', async function() {
       var title = document.getElementById('playlist-title').value;
       var artist = document.getElementById('playlist-artist').value;
       var url = document.getElementById('playlist-url').value;
       if (!title) return;
 
-      var pl = getData('playlist') || [];
+      var pl = await getData('playlist') || [];
       pl.push({ title: title, artist: artist, url: url });
-      setData('playlist', pl);
+      await setData('playlist', pl);
       document.getElementById('playlist-title').value = '';
       document.getElementById('playlist-artist').value = '';
       document.getElementById('playlist-url').value = '';
-      renderPlaylist();
+      await renderPlaylist();
     });
 
     // add to corner
-    document.getElementById('corner-add-btn').addEventListener('click', function() {
+    document.getElementById('corner-add-btn').addEventListener('click', async function() {
       var type = document.getElementById('corner-type').value;
       var title = document.getElementById('corner-title').value;
       var url = document.getElementById('corner-url').value;
       var desc = document.getElementById('corner-desc').value;
       if (!title || !url) return;
 
-      var items = getData('corner_items') || [];
+      var items = await getData('corner_items') || [];
       items.unshift({ type: type, title: title, url: url, description: desc, date: new Date().toISOString() });
-      setData('corner_items', items);
+      await setData('corner_items', items);
       document.getElementById('corner-title').value = '';
       document.getElementById('corner-url').value = '';
       document.getElementById('corner-desc').value = '';
       flashEl(document.getElementById('corner-saved'));
-      renderCorner();
+      await renderCorner();
     });
 
     // ticker
-    document.getElementById('ticker-save-btn').addEventListener('click', function() {
+    document.getElementById('ticker-save-btn').addEventListener('click', async function() {
       var val = document.getElementById('ticker-edit').value;
       if (val) {
-        setData('ticker', val);
+        await setData('ticker', val);
         var msg = document.getElementById('ticker-saved');
         msg.style.display = 'block';
         setTimeout(function() { msg.style.display = 'none'; }, 2000);
@@ -538,30 +540,30 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     });
 
     // pawcam gifs
-    document.getElementById('pawcam-add-btn').addEventListener('click', function() {
+    document.getElementById('pawcam-add-btn').addEventListener('click', async function() {
       var url = document.getElementById('pawcam-url').value;
       if (!url) return;
-      var gifs = getData('pawcam_gifs') || [];
+      var gifs = await getData('pawcam_gifs') || [];
       gifs.push(url);
-      setData('pawcam_gifs', gifs);
+      await setData('pawcam_gifs', gifs);
       document.getElementById('pawcam-url').value = '';
-      renderPawcam();
+      await renderPawcam();
     });
 
-    document.getElementById('pawcam-clear-btn').addEventListener('click', function() {
+    document.getElementById('pawcam-clear-btn').addEventListener('click', async function() {
       if (confirm('remove all gifs from paw cam?')) {
-        setData('pawcam_gifs', []);
-        renderPawcam();
+        await setData('pawcam_gifs', []);
+        await renderPawcam();
       }
     });
 
     // pawcam file upload
-    document.getElementById('pawcam-file').addEventListener('change', function(e) {
+    document.getElementById('pawcam-file').addEventListener('change', async function(e) {
       var files = Array.from(e.target.files);
       var status = document.getElementById('pawcam-upload-status');
       if (!files.length) return;
 
-      var gifs = getData('pawcam_gifs') || [];
+      var gifs = await getData('pawcam_gifs') || [];
       var loaded = 0;
       var total = files.length;
       status.textContent = 'uploading 0/' + total + '...';
@@ -571,7 +573,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           loaded++;
           if (loaded === total) {
             status.textContent = total + ' done!';
-            renderPawcam();
+            await renderPawcam();
           }
           return;
         }
@@ -580,7 +582,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         reader.onload = function(ev) {
           gifs.push(ev.target.result);
           try {
-            setData('pawcam_gifs', gifs);
+            await setData('pawcam_gifs', gifs);
           } catch(err) {
             // localStorage full
             status.textContent = 'storage full! use URLs instead.';
@@ -590,7 +592,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           status.textContent = 'uploading ' + loaded + '/' + total + '...';
           if (loaded === total) {
             status.textContent = loaded + ' gif' + (loaded > 1 ? 's' : '') + ' added!';
-            renderPawcam();
+            await renderPawcam();
             setTimeout(function() { status.textContent = ''; }, 3000);
           }
         };
@@ -601,13 +603,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     });
 
     // export
-    document.getElementById('export-btn').addEventListener('click', function() {
+    document.getElementById('export-btn').addEventListener('click', async function() {
       var data = {
-        about: getData('about'),
-        posts: getData('posts'),
-        song: getData('song'),
-        playlist: getData('playlist'),
-        corner_items: getData('corner_items')
+        about: await getData('about'),
+        posts: await getData('posts'),
+        song: await getData('song'),
+        playlist: await getData('playlist'),
+        corner_items: await getData('corner_items')
       };
       var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       var a = document.createElement('a');
@@ -616,8 +618,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       a.click();
     });
 
-    function renderPosts() {
-      var posts = getData('posts') || [];
+    async function renderPosts() {
+      var posts = await getData('posts') || [];
       var el = document.getElementById('posts-list');
       if (posts.length === 0) {
         el.innerHTML = '<div style="color:rgba(255,255,255,0.3)">no posts yet</div>';
@@ -637,16 +639,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       }).join('');
 
       el.querySelectorAll('.post-delete-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', async function() {
           var idx = parseInt(btn.getAttribute('data-idx'));
           posts.splice(idx, 1);
-          setData('posts', posts);
-          renderPosts();
+          await setData('posts', posts);
+          await renderPosts();
         });
       });
 
       el.querySelectorAll('.post-edit-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', async function() {
           var idx = parseInt(btn.getAttribute('data-idx'));
           var p = posts[idx];
           document.getElementById('post-title').value = p.title;
@@ -660,17 +662,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       });
 
       el.querySelectorAll('.post-pin-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', async function() {
           var idx = parseInt(btn.getAttribute('data-idx'));
           posts[idx].pinned = !posts[idx].pinned;
-          setData('posts', posts);
-          renderPosts();
+          await setData('posts', posts);
+          await renderPosts();
         });
       });
     }
 
-    function renderPlaylist() {
-      var pl = getData('playlist') || [];
+    async function renderPlaylist() {
+      var pl = await getData('playlist') || [];
       var el = document.getElementById('playlist-list');
       if (pl.length === 0) {
         el.innerHTML = '<div style="font-size:13px;color:rgba(255,255,255,0.3)">no songs in playlist yet</div>';
@@ -684,17 +686,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       }).join('');
 
       el.querySelectorAll('.pl-delete-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', async function() {
           var idx = parseInt(btn.getAttribute('data-idx'));
           pl.splice(idx, 1);
-          setData('playlist', pl);
-          renderPlaylist();
+          await setData('playlist', pl);
+          await renderPlaylist();
         });
       });
     }
 
-    function renderCorner() {
-      var items = getData('corner_items') || [];
+    async function renderCorner() {
+      var items = await getData('corner_items') || [];
       var el = document.getElementById('corner-list');
       if (items.length === 0) {
         el.innerHTML = '<div style="color:rgba(255,255,255,0.3)">no items yet</div>';
@@ -709,17 +711,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       }).join('');
 
       el.querySelectorAll('.corner-delete-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', async function() {
           var idx = parseInt(btn.getAttribute('data-idx'));
           items.splice(idx, 1);
-          setData('corner_items', items);
-          renderCorner();
+          await setData('corner_items', items);
+          await renderCorner();
         });
       });
     }
 
-    function renderPawcam() {
-      var gifs = getData('pawcam_gifs') || [];
+    async function renderPawcam() {
+      var gifs = await getData('pawcam_gifs') || [];
       var el = document.getElementById('pawcam-list');
       if (gifs.length === 0) {
         el.innerHTML = '<div style="color:rgba(255,255,255,0.3)">no gifs added</div>';
@@ -739,26 +741,26 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       }).join('');
 
       el.querySelectorAll('.pawcam-del-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', async function() {
           var idx = parseInt(btn.getAttribute('data-idx'));
           gifs.splice(idx, 1);
-          setData('pawcam_gifs', gifs);
-          renderPawcam();
+          await setData('pawcam_gifs', gifs);
+          await renderPawcam();
         });
       });
     }
 
-    function loadAdmin() {
-      document.getElementById('about-text-edit').value = getData('about') || '';
-      var song = getData('song') || {};
+    async function loadAdmin() {
+      document.getElementById('about-text-edit').value = await getData('about') || '';
+      var song = await getData('song') || {};
       document.getElementById('song-title').value = song.title || '';
       document.getElementById('song-artist').value = song.artist || '';
       document.getElementById('song-url').value = song.url || '';
-      renderPosts();
-      renderPlaylist();
-      renderCorner();
-      renderPawcam();
-      document.getElementById('ticker-edit').value = getData('ticker') || '';
+      await renderPosts();
+      await renderPlaylist();
+      await renderCorner();
+      await renderPawcam();
+      document.getElementById('ticker-edit').value = await getData('ticker') || '';
     }
   })();
 </script>

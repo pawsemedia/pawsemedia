@@ -97,41 +97,51 @@ const navItems = [
     if (!track) return;
 
     var text = 'welcome to pawse media ★ posts ★ videos ★ pics ★ music ★ ';
-    try {
-      var custom = JSON.parse(localStorage.getItem('pawse_ticker'));
-      if (custom && custom.length > 0) text = custom + ' ★ ';
-    } catch(e) {}
-
-    // measure one copy
-    var test = document.createElement('span');
-    test.style.cssText = 'font-size:9px;letter-spacing:2px;text-transform:uppercase;visibility:hidden;position:absolute;white-space:nowrap;';
-    test.textContent = text;
-    document.body.appendChild(test);
-
-    requestAnimationFrame(function() {
-      var oneWidth = test.offsetWidth || 200;
-      document.body.removeChild(test);
-
-      var screenW = window.innerWidth;
-      // each half needs to be wider than the screen
-      var reps = Math.ceil(screenW / oneWidth) + 2;
-      var segment = '';
-      for (var i = 0; i < reps; i++) segment += text;
-
-      // two identical halves
-      track.textContent = segment + segment;
-
-      var totalHalf = oneWidth * reps;
-      var pos = 0;
-      var speed = 0.6;
-
-      function tick() {
-        pos -= speed;
-        if (pos <= -totalHalf) pos += totalHalf;
-        track.style.transform = 'translateX(' + pos.toFixed(1) + 'px)';
-        requestAnimationFrame(tick);
+    (async function() {
+      try {
+        var custom = await pawseApi.get('ticker');
+        if (custom && custom.length > 0) text = custom + ' ★ ';
+      } catch(e) {
+        try {
+          var local = JSON.parse(localStorage.getItem('pawse_ticker'));
+          if (local && local.length > 0) text = local + ' ★ ';
+        } catch(e2) {}
       }
-      tick();
-    });
+      buildTicker();
+    })();
+
+    function buildTicker() {
+      var test = document.createElement('span');
+      test.style.cssText = 'font-size:9px;letter-spacing:2px;text-transform:uppercase;visibility:hidden;position:absolute;white-space:nowrap;';
+      test.textContent = text;
+      document.body.appendChild(test);
+
+      requestAnimationFrame(function() {
+        var oneWidth = test.offsetWidth || 200;
+        document.body.removeChild(test);
+
+        var screenW = window.innerWidth;
+        var reps = Math.ceil(screenW / oneWidth) + 2;
+        var segment = '';
+        for (var i = 0; i < reps; i++) segment += text;
+
+        track.textContent = segment + segment;
+
+        var totalHalf = oneWidth * reps;
+        var pos = 0;
+        var speed = 0.6;
+
+        function tick() {
+          pos -= speed;
+          if (pos <= -totalHalf) pos += totalHalf;
+          track.style.transform = 'translateX(' + pos.toFixed(1) + 'px)';
+          requestAnimationFrame(tick);
+        }
+        tick();
+      });
+    }
+
+    // start with default text immediately, API will rebuild if custom
+    buildTicker();
   })();
 </script>

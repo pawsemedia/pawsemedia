@@ -60,9 +60,9 @@ const formatDate = (date: Date) => {
 </style>
 
 <script is:inline>
-  (function() {
+  (async function() {
     var posts = [];
-    try { posts = JSON.parse(localStorage.getItem('pawse_posts')) || []; } catch(e) {}
+    try { posts = await pawseApi.get('posts') || []; } catch(e) {}
     var listEl = document.getElementById('admin-posts-list');
     var viewer = document.getElementById('post-viewer');
     var allPosts = document.getElementById('all-posts');

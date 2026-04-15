@@ -109,9 +109,8 @@ const formatDate = (date: Date) => {
 </BaseLayout>
 
 <script is:inline>
-  (function() {
-    var posts = [];
-    try { posts = JSON.parse(localStorage.getItem('pawse_posts')) || []; } catch(e) {}
+  (async function() {
+    var posts = await pawseApi.get('posts') || [];
 
     // render admin posts on homepage
     var el = document.getElementById('admin-posts-home');
@@ -138,7 +137,7 @@ const formatDate = (date: Date) => {
       }).join('');
     }
 
-    // bg logo music visualizer — subtle bounce
+    // bg logo music visualizer
     var bgLogo = document.querySelector('.bg-logo');
     if (bgLogo) {
       var musicE = 0;

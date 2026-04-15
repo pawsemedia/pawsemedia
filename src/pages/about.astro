@@ -21,9 +21,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 </BaseLayout>
 
 <script is:inline>
-  (function() {
+  (async function() {
     try {
-      var text = JSON.parse(localStorage.getItem('pawse_about'));
+      var text = await pawseApi.get('about');
       if (text) document.getElementById('about-text').textContent = text;
     } catch(e) {}
   })();
