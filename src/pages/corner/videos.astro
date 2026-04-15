@@ -1,0 +1,53 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="videos — the corner — pawse media">
+  <section style="padding-top: 32px; position: relative;">
+    <span class="bumper bumper--serif" style="top: 28px; right: 4px; transform: rotate(2deg); font-size: 12px;">watch</span>
+    <div style="margin-bottom: 16px;">
+      <a href="/corner" style="font-size: 11px; color: rgba(255,255,255,0.3); letter-spacing: 1px;">← the corner</a>
+    </div>
+    <h1 style="font-size: 28px; font-weight: 700; letter-spacing: 3px; margin-bottom: 20px;">videos</h1>
+    <div id="videos-grid" class="media-grid">
+      <div style="font-size: 13px; color: rgba(255,255,255,0.3);">loading videos...</div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .media-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  @media (max-width: 480px) {
+    .media-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script is:inline>
+  (function() {
+    var items = [];
+    try { items = JSON.parse(localStorage.getItem('pawse_corner_items')) || []; } catch(e) {}
+    var videos = items.filter(function(i) { return i.type === 'video'; });
+    var grid = document.getElementById('videos-grid');
+    if (videos.length === 0) {
+      grid.innerHTML = '<div style="font-size:13px;color:rgba(255,255,255,0.3);grid-column:1/-1;">no videos yet — add some from the admin panel</div>';
+      return;
+    }
+    grid.innerHTML = videos.map(function(v) {
+      var embedUrl = '';
+      var match = v.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+      if (match) embedUrl = 'https://www.youtube.com/embed/' + match[1];
+      return '<div class="card" style="overflow:hidden;">' +
+        (embedUrl ? '<div style="aspect-ratio:16/9;"><iframe src="' + embedUrl + '" style="width:100%;height:100%;border:none;" allowfullscreen></iframe></div>' :
+        '<a href="' + v.url + '" target="_blank" style="display:block;padding:20px;text-align:center;color:rgba(255,255,255,0.4);font-size:12px;">open link ↗</a>') +
+        '<div style="padding:10px 12px;">' +
+        '<div style="font-size:13px;font-weight:600;color:#fff;">' + v.title + '</div>' +
+        (v.description ? '<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:3px;">' + v.description + '</div>' : '') +
+        '</div></div>';
+    }).join('');
+  })();
+</script>

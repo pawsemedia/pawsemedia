@@ -1,0 +1,37 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="music — the corner — pawse media">
+  <section style="padding-top: 32px; position: relative;">
+    <span class="bumper bumper--mono" style="top: 28px; right: 4px; transform: rotate(1deg); font-size: 10px;">listen</span>
+    <div style="margin-bottom: 16px;">
+      <a href="/corner" style="font-size: 11px; color: rgba(255,255,255,0.3); letter-spacing: 1px;">← the corner</a>
+    </div>
+    <h1 style="font-size: 28px; font-weight: 700; letter-spacing: 3px; margin-bottom: 20px;">music</h1>
+    <div id="music-list">
+      <div style="font-size: 13px; color: rgba(255,255,255,0.3);">loading playlist...</div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script is:inline>
+  (function() {
+    var playlist = [];
+    try { playlist = JSON.parse(localStorage.getItem('pawse_playlist')) || []; } catch(e) {}
+    var el = document.getElementById('music-list');
+    if (playlist.length === 0) {
+      el.innerHTML = '<div style="font-size:13px;color:rgba(255,255,255,0.3);">no tracks yet — add some from the admin panel</div>';
+      return;
+    }
+    el.innerHTML = playlist.map(function(s, i) {
+      return '<div class="card" style="margin-bottom:6px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;">' +
+        '<div>' +
+        '<div style="font-size:14px;font-weight:600;color:#fff;">' + s.title + '</div>' +
+        '<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;">' + s.artist + '</div>' +
+        '</div>' +
+        (s.url ? '<a href="' + s.url + '" target="_blank" class="btn" style="font-size:9px;padding:4px 10px;">listen ↗</a>' : '') +
+        '</div>';
+    }).join('');
+  })();
+</script>

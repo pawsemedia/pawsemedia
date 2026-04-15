@@ -1,49 +1,335 @@
 ---
-import BaseHead from '../components/BaseHead.astro';
-import Footer from '../components/Footer.astro';
-import Header from '../components/Header.astro';
-import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SongOfTheDay from '../components/SongOfTheDay.astro';
+import PawCam from '../components/PawCam.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('blog')).sort(
+  (a, b) => new Date(b.data.pubDate).valueOf() - new Date(a.data.pubDate).valueOf()
+).slice(0, 5);
+
+const formatDate = (date: Date) => {
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toLowerCase();
+};
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-	</head>
-	<body>
-		<Header />
-		<main>
-			<h1>🧑‍🚀 Hello, Astronaut!</h1>
-			<p>
-				Welcome to the official <a href="https://astro.build/">Astro</a> blog starter template. This template
-				serves as a lightweight, minimally-styled starting point for anyone looking to build a personal
-				website, blog, or portfolio with Astro.
-			</p>
-			<p>
-				This template comes with a few integrations already configured in your
-				<code>astro.config.mjs</code> file. You can customize your setup with
-				<a href="https://astro.build/integrations">Astro Integrations</a> to add tools like Tailwind,
-				React, or Vue to your project.
-			</p>
-			<p>Here are a few ideas on how to get started with the template:</p>
-			<ul>
-				<li>Edit this page in <code>src/pages/index.astro</code></li>
-				<li>Edit the site header items in <code>src/components/Header.astro</code></li>
-				<li>Add your name to the footer in <code>src/components/Footer.astro</code></li>
-				<li>Check out the included blog posts in <code>src/content/blog/</code></li>
-				<li>Customize the blog post page layout in <code>src/layouts/BlogPost.astro</code></li>
-			</ul>
-			<p>
-				Have fun! If you get stuck, remember to
-				<a href="https://docs.astro.build/">read the docs</a>
-				or <a href="https://astro.build/chat">join us on Discord</a> to ask questions.
-			</p>
-			<p>
-				Looking for a blog template with a bit more personality? Check out
-				<a href="https://github.com/Charca/astro-blog-template">astro-blog-template</a>
-				by <a href="https://twitter.com/Charca">Maxi Ferreira</a>.
-			</p>
-		</main>
-		<Footer />
-	</body>
-</html>
+<BaseLayout title="pawse media" showSplash={true}>
+
+  <!-- bg logo watermark -->
+  <div class="bg-logo">
+    <img src="/logo-white.png" alt="" class="bg-logo__img" />
+  </div>
+
+  <!-- paw cam -->
+  <PawCam />
+
+  <div class="home-grid">
+    <!-- main column -->
+    <div class="home-main">
+
+      <!-- song of the day — featured section -->
+      <div class="home-panel">
+        <div class="home-panel__header">
+          <span class="home-panel__title">song of the day</span>
+          <span class="home-panel__badge">♫ NOW</span>
+        </div>
+        <div class="home-panel__body">
+          <SongOfTheDay title="Track Title" artist="Artist" />
+        </div>
+      </div>
+
+      <!-- latest posts -->
+      <div class="home-panel">
+        <div class="home-panel__header">
+          <span class="home-panel__title">latest posts</span>
+          <a href="/posts" class="home-panel__link">all posts →</a>
+        </div>
+        <div class="home-panel__body home-panel__body--tight">
+          {posts.length > 0 ? (
+            posts.map((post) => (
+              <a href={`/posts/${post.id}`} class="post-item">
+                <div>
+                  <div class="post-item__title">{post.data.title}</div>
+                  {post.data.description && (
+                    <div class="post-item__desc">{post.data.description}</div>
+                  )}
+                </div>
+                <div class="post-item__date">{formatDate(new Date(post.data.pubDate))}</div>
+              </a>
+            ))
+          ) : (
+            <span></span>
+          )}
+          <div id="admin-posts-home"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- sidebar -->
+    <div class="home-side">
+
+      <!-- the corner -->
+      <div class="home-panel">
+        <div class="home-panel__header">
+          <span class="home-panel__title">the corner</span>
+        </div>
+        <div class="home-panel__body">
+          <div class="corner-stack">
+            <a href="/corner/videos" class="corner-block corner-block--videos">
+              <span class="corner-block__icon">&#9654;</span>
+              <span class="corner-block__label">videos</span>
+            </a>
+            <a href="/corner/pics" class="corner-block corner-block--pics">
+              <span class="corner-block__icon">&#9733;</span>
+              <span class="corner-block__label">pics</span>
+            </a>
+            <a href="/corner/music" class="corner-block corner-block--music">
+              <span class="corner-block__icon">&#9835;</span>
+              <span class="corner-block__label">music</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- what's on -->
+      <div class="home-panel" style="position:relative;">
+        <img src="/vectors/pin.png" alt="" class="pin-sticker" />
+        <div class="home-panel__header">
+          <span class="home-panel__title">what's on</span>
+        </div>
+        <div class="home-panel__body home-panel__body--tight" id="pinned-posts">
+          <div style="font-size: 11px; color: rgba(255,255,255,0.2); padding: 8px;">nothing pinned yet</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</BaseLayout>
+
+<script is:inline>
+  (function() {
+    var posts = [];
+    try { posts = JSON.parse(localStorage.getItem('pawse_posts')) || []; } catch(e) {}
+
+    // render admin posts on homepage
+    var el = document.getElementById('admin-posts-home');
+    if (el && posts.length) {
+      el.innerHTML = posts.slice(0, 5).map(function(p) {
+        var d = new Date(p.pubDate);
+        var date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toLowerCase();
+        return '<a href="/posts?view=' + p.id + '" class="post-item">' +
+          '<div><div class="post-item__title">' + p.title + '</div>' +
+          (p.description ? '<div class="post-item__desc">' + p.description + '</div>' : '') +
+          '</div><div class="post-item__date">' + date + '</div></a>';
+      }).join('');
+    }
+
+    // render pinned posts
+    var pinnedEl = document.getElementById('pinned-posts');
+    var pinned = posts.filter(function(p) { return p.pinned; });
+    if (pinnedEl && pinned.length) {
+      pinnedEl.innerHTML = pinned.map(function(p) {
+        return '<a href="/posts?view=' + p.id + '" class="post-item">' +
+          '<div><div class="post-item__title">' + p.title + '</div>' +
+          (p.description ? '<div class="post-item__desc">' + p.description + '</div>' : '') +
+          '</div></a>';
+      }).join('');
+    }
+
+    // bg logo music visualizer — subtle bounce
+    var bgLogo = document.querySelector('.bg-logo');
+    if (bgLogo) {
+      var musicE = 0;
+      var phase = 0;
+      var origPawseSet = window.pawseSetMusicEnergy;
+      var musicTarget = 0;
+
+      window.pawseSetMusicEnergy = function(val) {
+        if (origPawseSet) origPawseSet(val);
+        musicTarget = val;
+      };
+
+      function animLogo() {
+        musicE += (musicTarget - musicE) * 0.08;
+        phase += 0.06;
+        var beat = musicE * (0.5 + 0.5 * Math.sin(phase * 3));
+        var s = 1 + beat * 0.03;
+        var tx = Math.sin(phase * 1.5) * beat * 8;
+        var ty = Math.cos(phase * 2) * beat * 6;
+        bgLogo.style.transform = 'translateY(-50%) translate(' + tx.toFixed(1) + 'px,' + ty.toFixed(1) + 'px) scale(' + s.toFixed(4) + ')';
+        bgLogo.style.opacity = (0.03 + beat * 0.02).toFixed(4);
+        requestAnimationFrame(animLogo);
+      }
+      animLogo();
+    }
+  })();
+</script>
+
+<style>
+  .pin-sticker {
+    position: absolute;
+    top: -12px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    z-index: 2;
+    pointer-events: none;
+    transform: rotate(8deg);
+  }
+
+  .bg-logo {
+    position: fixed;
+    right: -80px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 500px;
+    height: 500px;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.03;
+  }
+
+  .bg-logo__img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .home-grid {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 16px;
+    padding-top: 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .home-main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .home-side {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* CN-style bordered panels */
+  .home-panel {
+    border: 2px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.015);
+  }
+
+  .home-panel__header {
+    background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%);
+    border-bottom: 2px solid rgba(255,255,255,0.08);
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .home-panel__title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .home-panel__badge {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.7);
+    background: rgba(255,255,255,0.08);
+    padding: 2px 8px;
+    border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .home-panel__link {
+    font-size: 10px;
+    color: rgba(255,255,255,0.3);
+    text-decoration: none;
+    letter-spacing: 1px;
+    transition: color 0.2s;
+  }
+
+  .home-panel__link:hover {
+    color: rgba(255,255,255,0.6);
+  }
+
+  .home-panel__body {
+    padding: 14px;
+  }
+
+  .home-panel__body--tight {
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  /* corner blocks — chunky, CN-style */
+  .corner-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .corner-block {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 6px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
+    text-decoration: none;
+    transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  .corner-block:hover {
+    border-color: rgba(255,255,255,0.15);
+    background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%);
+    transform: translateX(4px);
+  }
+
+  .corner-block__icon {
+    font-size: 16px;
+    color: rgba(255,255,255,0.5);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.05);
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.08);
+    flex-shrink: 0;
+  }
+
+  .corner-block__label {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 1px;
+    text-transform: lowercase;
+  }
+
+  @media (max-width: 768px) {
+    .home-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .bg-logo { width: 300px; height: 300px; right: -60px; }
+  }
+</style>

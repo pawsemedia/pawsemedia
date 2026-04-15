@@ -1,0 +1,142 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+const formatDate = (date: Date) => {
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toLowerCase();
+};
+---
+
+<BaseLayout title={`${post.data.title} — pawse media`}>
+  <article class="post" style="padding-top: 32px;">
+    <header class="post__header">
+      <span class="post__date">{formatDate(new Date(post.data.pubDate))}</span>
+      <h1 class="post__title">{post.data.title}</h1>
+      {post.data.description && (
+        <p class="post__desc">{post.data.description}</p>
+      )}
+    </header>
+    <div class="post__content">
+      <Content />
+    </div>
+    <div class="post__back">
+      <a href="/posts" class="btn">← back to posts</a>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .post__header {
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .post__date {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.2);
+  }
+
+  .post__title {
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    margin-top: 6px;
+    color: #fff;
+  }
+
+  .post__desc {
+    font-size: 13px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 6px;
+  }
+
+  .post__content {
+    font-size: 15px;
+    line-height: 1.7;
+    color: rgba(255,255,255,0.7);
+  }
+
+  .post__content :global(h2) {
+    font-size: 20px;
+    font-weight: 500;
+    color: #fff;
+    margin: 28px 0 12px;
+  }
+
+  .post__content :global(h3) {
+    font-size: 16px;
+    font-weight: 500;
+    color: #fff;
+    margin: 20px 0 8px;
+  }
+
+  .post__content :global(p) {
+    margin-bottom: 16px;
+  }
+
+  .post__content :global(a) {
+    color: rgba(255,255,255,0.9);
+    text-decoration: underline;
+    text-decoration-color: rgba(255,255,255,0.2);
+    text-underline-offset: 3px;
+  }
+
+  .post__content :global(a:hover) {
+    text-decoration-color: rgba(255,255,255,0.5);
+  }
+
+  .post__content :global(code) {
+    font-family: 'Courier New', monospace;
+    background: rgba(255,255,255,0.06);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+
+  .post__content :global(pre) {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    margin-bottom: 16px;
+  }
+
+  .post__content :global(pre code) {
+    background: none;
+    padding: 0;
+  }
+
+  .post__content :global(img) {
+    max-width: 100%;
+    border-radius: 8px;
+    margin: 16px 0;
+  }
+
+  .post__content :global(blockquote) {
+    border-left: 2px solid rgba(255,255,255,0.15);
+    padding-left: 16px;
+    margin: 16px 0;
+    color: rgba(255,255,255,0.5);
+    font-style: italic;
+  }
+
+  .post__back {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+</style>

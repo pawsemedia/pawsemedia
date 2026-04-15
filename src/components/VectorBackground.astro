@@ -1,0 +1,74 @@
+---
+---
+
+<div id="vec-bg">
+  <div id="bouncer">
+    <img src="/vectors/bouncer.png" alt="" id="bouncer-img" />
+  </div>
+</div>
+
+<style>
+  #vec-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  #bouncer {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    opacity: 0.04;
+    pointer-events: none;
+  }
+
+  #bouncer-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    transition: transform 0.1s;
+  }
+</style>
+
+<script is:inline>
+  (function() {
+    var bouncer = document.getElementById('bouncer');
+    var img = document.getElementById('bouncer-img');
+    if (!bouncer || !img) return;
+
+    var x = Math.random() * (window.innerWidth - 100);
+    var y = Math.random() * (window.innerHeight - 100);
+    var vx = 1.2;
+    var vy = 0.9;
+    var size = 80;
+    var flipX = 1;
+    var flipY = 1;
+
+    function tick() {
+      var w = window.innerWidth;
+      var h = window.innerHeight;
+
+      x += vx;
+      y += vy;
+
+      if (x <= 0) { x = 0; vx = Math.abs(vx); flipX = 1; }
+      if (x >= w - size) { x = w - size; vx = -Math.abs(vx); flipX = -1; }
+      if (y <= 0) { y = 0; vy = Math.abs(vy); flipY = 1; }
+      if (y >= h - size) { y = h - size; vy = -Math.abs(vy); flipY = -1; }
+
+      bouncer.style.left = x + 'px';
+      bouncer.style.top = y + 'px';
+      img.style.transform = 'scaleX(' + flipX + ') scaleY(' + flipY + ')';
+
+      requestAnimationFrame(tick);
+    }
+
+    tick();
+  })();
+</script>

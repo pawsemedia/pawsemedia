@@ -1,0 +1,51 @@
+---
+---
+
+<div style="display:none;">
+  <audio id="sfx-splash" src="/sounds/splash.mp3" preload="auto"></audio>
+  <audio id="sfx-hover-splash" src="/sounds/hover-splash.mp3" preload="auto"></audio>
+  <audio id="sfx-hover-home" src="/sounds/hover-home.mp3" preload="auto"></audio>
+  <audio id="sfx-hover-posts" src="/sounds/hover-posts.mp3" preload="auto"></audio>
+  <audio id="sfx-hover-corner" src="/sounds/hover-corner.mp3" preload="auto"></audio>
+  <audio id="sfx-hover-about" src="/sounds/hover-about.mp3" preload="auto"></audio>
+  <audio id="sfx-click" src="/sounds/click.mp3" preload="auto"></audio>
+</div>
+
+<script is:inline>
+  (function() {
+    var unlocked = false;
+
+    function unlock() {
+      if (unlocked) return;
+      unlocked = true;
+      // play and immediately pause a silent audio to unlock the audio context
+      var all = document.querySelectorAll('audio');
+      all.forEach(function(a) {
+        a.play().then(function() { a.pause(); a.currentTime = 0; }).catch(function(){});
+      });
+    }
+
+    // unlock on ANY user interaction — mouse move, click, touch, keypress
+    document.addEventListener('mousemove', unlock, { once: true });
+    document.addEventListener('touchstart', unlock, { once: true });
+    document.addEventListener('click', unlock, { once: true });
+    document.addEventListener('keydown', unlock, { once: true });
+
+    window.pawsePlaySound = function(id) {
+      var el = document.getElementById(id);
+      if (el) { el.currentTime = 0; el.play().catch(function(){}); }
+    };
+
+    document.querySelectorAll('.header__tab').forEach(function(link) {
+      var t = link.textContent.trim().toLowerCase();
+      var map = { home:'sfx-hover-home', posts:'sfx-hover-posts', corner:'sfx-hover-corner', about:'sfx-hover-about' };
+      if (map[t]) link.addEventListener('mouseenter', function() { window.pawsePlaySound(map[t]); });
+    });
+
+    document.addEventListener('click', function(e) {
+      if (e.target.closest('.btn') || e.target.closest('.corner-tile') || e.target.closest('.post-item')) {
+        window.pawsePlaySound('sfx-click');
+      }
+    });
+  })();
+</script>

@@ -1,0 +1,764 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="admin — pawse media">
+  <section style="padding-top: 32px;">
+
+    <!-- login gate -->
+    <div id="login-gate" class="admin-login">
+      <h1 style="font-size: 20px; font-weight: 500; letter-spacing: 3px; margin-bottom: 20px;">owner access</h1>
+      <div class="card" style="max-width: 320px;">
+        <input
+          id="admin-pw"
+          type="password"
+          placeholder="password"
+          class="admin-input"
+          style="width: 100%; margin-bottom: 10px;"
+        />
+        <button id="admin-login-btn" class="btn" style="width: 100%; text-align: center; padding: 8px 12px;">
+          enter
+        </button>
+        <div id="login-error" style="font-size: 11px; color: rgba(255,100,100,0.7); margin-top: 8px; display: none;">
+          wrong password
+        </div>
+      </div>
+    </div>
+
+    <!-- admin panel (hidden until login) -->
+    <div id="admin-panel" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h1 style="font-size: 20px; font-weight: 500; letter-spacing: 3px;">admin panel</h1>
+        <button id="admin-logout-btn" class="btn" style="font-size: 10px;">logout</button>
+      </div>
+
+      <!-- tabs -->
+      <div class="admin-tabs">
+        <button class="admin-tab admin-tab--active" data-tab="about">about</button>
+        <button class="admin-tab" data-tab="posts">posts</button>
+        <button class="admin-tab" data-tab="music">music</button>
+        <button class="admin-tab" data-tab="corner">corner</button>
+        <button class="admin-tab" data-tab="pawcam">paw cam</button>
+        <button class="admin-tab" data-tab="ticker">ticker</button>
+        <button class="admin-tab" data-tab="settings">settings</button>
+      </div>
+
+      <!-- about tab -->
+      <div class="admin-section" data-section="about">
+        <div class="card">
+          <div class="admin-label">about page text</div>
+          <textarea id="about-text-edit" class="admin-textarea" rows="6" placeholder="write your about text here..."></textarea>
+          <button class="btn admin-save" data-save="about" style="margin-top: 10px;">save about</button>
+          <div class="admin-saved" data-msg="about">saved!</div>
+        </div>
+      </div>
+
+      <!-- posts tab -->
+      <div class="admin-section" data-section="posts" style="display: none;">
+        <div class="card" style="margin-bottom: 16px;">
+          <div class="admin-label" id="post-form-label">create new post</div>
+          <input id="post-title" class="admin-input" placeholder="post title" style="width: 100%; margin-bottom: 8px;" />
+          <input id="post-desc" class="admin-input" placeholder="short description (optional)" style="width: 100%; margin-bottom: 8px;" />
+          <textarea id="post-body" class="admin-textarea" rows="10" placeholder="write your post here... (markdown supported)"></textarea>
+          <div style="display:flex;gap:6px;margin-top:10px;">
+            <button class="btn" id="post-create-btn">publish post</button>
+            <button class="btn" id="post-cancel-btn" style="display:none;">cancel edit</button>
+          </div>
+          <input type="hidden" id="post-edit-id" value="" />
+          <div class="admin-saved" id="post-saved">post published!</div>
+        </div>
+
+        <div class="card">
+          <div class="admin-label">existing posts</div>
+          <div id="posts-list" style="font-size: 13px; color: rgba(255,255,255,0.4);">
+            loading...
+          </div>
+        </div>
+      </div>
+
+      <!-- music tab -->
+      <div class="admin-section" data-section="music" style="display: none;">
+        <div class="card" style="margin-bottom: 16px;">
+          <div class="admin-label">song of the day</div>
+          <input id="song-title" class="admin-input" placeholder="track title" style="width: 100%; margin-bottom: 8px;" />
+          <input id="song-artist" class="admin-input" placeholder="artist" style="width: 100%; margin-bottom: 8px;" />
+          <input id="song-url" class="admin-input" placeholder="link (youtube, spotify, etc.)" style="width: 100%; margin-bottom: 8px;" />
+          <button class="btn admin-save" data-save="music" style="margin-top: 4px;">save song</button>
+          <div class="admin-saved" data-msg="music">saved!</div>
+        </div>
+
+        <div class="card">
+          <div class="admin-label">playlist</div>
+          <div id="playlist-list" style="margin-bottom: 12px;">
+            <div style="font-size: 13px; color: rgba(255,255,255,0.3);">no songs in playlist yet</div>
+          </div>
+          <input id="playlist-title" class="admin-input" placeholder="track title" style="width: 100%; margin-bottom: 6px;" />
+          <input id="playlist-artist" class="admin-input" placeholder="artist" style="width: 100%; margin-bottom: 6px;" />
+          <input id="playlist-url" class="admin-input" placeholder="link" style="width: 100%; margin-bottom: 8px;" />
+          <button class="btn" id="playlist-add-btn">add to playlist</button>
+        </div>
+      </div>
+
+      <!-- corner tab -->
+      <div class="admin-section" data-section="corner" style="display: none;">
+        <div class="card" style="margin-bottom: 16px;">
+          <div class="admin-label">add to the corner</div>
+          <select id="corner-type" class="admin-input" style="width: 100%; margin-bottom: 8px;">
+            <option value="video">video (youtube link)</option>
+            <option value="image">image (url)</option>
+            <option value="link">link</option>
+          </select>
+          <input id="corner-title" class="admin-input" placeholder="title" style="width: 100%; margin-bottom: 8px;" />
+          <input id="corner-url" class="admin-input" placeholder="url" style="width: 100%; margin-bottom: 8px;" />
+          <textarea id="corner-desc" class="admin-textarea" rows="2" placeholder="description (optional)"></textarea>
+          <button class="btn" id="corner-add-btn" style="margin-top: 10px;">add to corner</button>
+          <div class="admin-saved" id="corner-saved">added!</div>
+        </div>
+
+        <div class="card">
+          <div class="admin-label">corner items</div>
+          <div id="corner-list" style="font-size: 13px; color: rgba(255,255,255,0.3);">
+            no items yet
+          </div>
+        </div>
+      </div>
+
+      <!-- pawcam tab -->
+      <div class="admin-section" data-section="pawcam" style="display: none;">
+        <div class="card" style="margin-bottom: 16px;">
+          <div class="admin-label">paw cam gifs</div>
+          <p style="font-size: 11px; color: rgba(255,255,255,0.25); margin-bottom: 12px;">add gifs by URL or upload from your device.</p>
+
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 10px; letter-spacing: 1px; color: rgba(255,255,255,0.3); margin-bottom: 6px; text-transform: uppercase;">add by url</div>
+            <input id="pawcam-url" class="admin-input" placeholder="gif url (e.g. https://media.giphy.com/...)" style="width: 100%; margin-bottom: 8px;" />
+            <button class="btn" id="pawcam-add-btn">add gif</button>
+          </div>
+
+          <div>
+            <div style="font-size: 10px; letter-spacing: 1px; color: rgba(255,255,255,0.3); margin-bottom: 6px; text-transform: uppercase;">upload gif file</div>
+            <label class="btn" style="display:inline-block;cursor:pointer;" id="pawcam-upload-label">
+              choose file
+              <input type="file" id="pawcam-file" accept=".gif,image/gif" style="display:none;" multiple />
+            </label>
+            <span id="pawcam-upload-status" style="font-size: 10px; color: rgba(255,255,255,0.25); margin-left: 8px;"></span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="admin-label">current gifs</div>
+          <div id="pawcam-list" style="font-size: 13px; color: rgba(255,255,255,0.3);">loading...</div>
+          <button class="btn" id="pawcam-clear-btn" style="margin-top: 10px; font-size: 9px;">remove all gifs</button>
+        </div>
+      </div>
+
+      <!-- ticker tab -->
+      <div class="admin-section" data-section="ticker" style="display: none;">
+        <div class="card">
+          <div class="admin-label">header ticker text</div>
+          <p style="font-size: 11px; color: rgba(255,255,255,0.25); margin-bottom: 10px;">this scrolls across the top of the site. keep it short and punchy.</p>
+          <input id="ticker-edit" class="admin-input" placeholder="welcome to pawse media ★ posts ★ videos ★ pics ★ music" style="width: 100%; margin-bottom: 8px;" />
+          <button class="btn" id="ticker-save-btn">save ticker</button>
+          <div class="admin-saved" id="ticker-saved">saved!</div>
+        </div>
+      </div>
+
+      <!-- settings tab -->
+      <div class="admin-section" data-section="settings" style="display: none;">
+        <div class="card" style="margin-bottom: 16px;">
+          <div class="admin-label">change password</div>
+          <input id="safe-word" type="password" class="admin-input" placeholder="safe word (required)" style="width: 100%; margin-bottom: 8px;" />
+          <input id="new-pw" type="password" class="admin-input" placeholder="new password" style="width: 100%; margin-bottom: 8px;" />
+          <input id="confirm-pw" type="password" class="admin-input" placeholder="confirm password" style="width: 100%; margin-bottom: 8px;" />
+          <button class="btn admin-save" data-save="password" style="margin-top: 4px;">update password</button>
+          <div class="admin-saved" data-msg="password">password updated!</div>
+          <div id="pw-error" style="display:none;color:#ff6b6b;font-size:11px;margin-top:6px;"></div>
+        </div>
+
+        <div class="card">
+          <div class="admin-label">export all data</div>
+          <p style="font-size: 12px; color: rgba(255,255,255,0.3); margin-bottom: 10px;">download all your content as JSON</p>
+          <button class="btn" id="export-btn">export data</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .admin-login {
+    text-align: center;
+    padding-top: 60px;
+  }
+
+  .admin-login .card {
+    margin: 0 auto;
+  }
+
+  .admin-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .admin-tab {
+    padding: 6px 14px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.4);
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+
+  .admin-tab--active {
+    color: #fff;
+    background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+    border-color: rgba(255,255,255,0.15);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+
+  .admin-tab:hover:not(.admin-tab--active) {
+    color: rgba(255,255,255,0.7);
+  }
+
+  .admin-input {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: #fff;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.2s;
+  }
+
+  .admin-input:focus {
+    border-color: rgba(255,255,255,0.25);
+  }
+
+  .admin-input::placeholder {
+    color: rgba(255,255,255,0.2);
+  }
+
+  .admin-textarea {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: #fff;
+    outline: none;
+    font-family: 'Courier New', monospace;
+    resize: vertical;
+    line-height: 1.6;
+    transition: border-color 0.2s;
+  }
+
+  .admin-textarea:focus {
+    border-color: rgba(255,255,255,0.25);
+  }
+
+  .admin-textarea::placeholder {
+    color: rgba(255,255,255,0.2);
+    font-family: inherit;
+  }
+
+  .admin-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.25);
+    margin-bottom: 10px;
+    text-transform: lowercase;
+  }
+
+  .admin-saved {
+    font-size: 11px;
+    color: rgba(100,255,150,0.6);
+    margin-top: 8px;
+    display: none;
+  }
+
+  select.admin-input {
+    cursor: pointer;
+  }
+
+  select.admin-input option {
+    background: #1a1a1a;
+    color: #fff;
+  }
+</style>
+
+<script is:inline>
+  (function() {
+    var DEFAULT_PW = 'pawse2026';
+
+    function getData(key) {
+      try { return JSON.parse(localStorage.getItem('pawse_' + key)); } catch(e) { return null; }
+    }
+    function setData(key, val) {
+      localStorage.setItem('pawse_' + key, JSON.stringify(val));
+    }
+
+    // init defaults
+    if (!getData('password')) setData('password', DEFAULT_PW);
+    if (!getData('about')) setData('about', 'this is pawse media. a spot for posts, cool finds, videos, music, and whatever else. run by me and my friends. that\'s about it.');
+    if (!getData('posts')) setData('posts', []);
+    if (!getData('song')) setData('song', { title: 'Track Title', artist: 'Artist', url: '' });
+    if (!getData('playlist')) setData('playlist', []);
+    if (!getData('pawcam_gifs')) setData('pawcam_gifs', [
+      'https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif',
+      'https://media.giphy.com/media/MDJ9IbxxvDUQM/giphy.gif',
+      'https://media.giphy.com/media/VbnUQpnihPSIgIXuZv/giphy.gif',
+      'https://media.giphy.com/media/BzyTuYCmvSORqs1ABM/giphy.gif',
+      'https://media.giphy.com/media/mlvseq9yvZhba/giphy.gif',
+      'https://media.giphy.com/media/ICOgUNjpvO0PC/giphy.gif',
+      'https://media.giphy.com/media/nR4L10XlJcSeQ/giphy.gif',
+      'https://media.giphy.com/media/3oriO0OEd9QIDdllqo/giphy.gif'
+    ]);
+    if (!getData('corner_items')) setData('corner_items', []);
+
+    var gate = document.getElementById('login-gate');
+    var panel = document.getElementById('admin-panel');
+    var pwInput = document.getElementById('admin-pw');
+    var loginBtn = document.getElementById('admin-login-btn');
+    var loginError = document.getElementById('login-error');
+    var logoutBtn = document.getElementById('admin-logout-btn');
+
+    // check if already logged in
+    if (sessionStorage.getItem('pawse_admin') === 'true') {
+      gate.style.display = 'none';
+      panel.style.display = 'block';
+      loadAdmin();
+    }
+
+    loginBtn.addEventListener('click', function() {
+      var pw = getData('password');
+      if (pwInput.value === pw) {
+        sessionStorage.setItem('pawse_admin', 'true');
+        gate.style.display = 'none';
+        panel.style.display = 'block';
+        loadAdmin();
+      } else {
+        loginError.style.display = 'block';
+        pwInput.value = '';
+      }
+    });
+
+    pwInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') loginBtn.click();
+    });
+
+    logoutBtn.addEventListener('click', function() {
+      sessionStorage.removeItem('pawse_admin');
+      gate.style.display = 'block';
+      panel.style.display = 'none';
+      pwInput.value = '';
+      loginError.style.display = 'none';
+    });
+
+    // tabs
+    var tabs = document.querySelectorAll('.admin-tab');
+    var sections = document.querySelectorAll('.admin-section');
+    tabs.forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        tabs.forEach(function(t) { t.classList.remove('admin-tab--active'); });
+        tab.classList.add('admin-tab--active');
+        var target = tab.getAttribute('data-tab');
+        sections.forEach(function(s) {
+          s.style.display = s.getAttribute('data-section') === target ? 'block' : 'none';
+        });
+      });
+    });
+
+    // flash saved message
+    function flashSaved(key) {
+      var msg = document.querySelector('[data-msg="' + key + '"]');
+      if (!msg) return;
+      msg.style.display = 'block';
+      setTimeout(function() { msg.style.display = 'none'; }, 2000);
+    }
+
+    function flashEl(el) {
+      el.style.display = 'block';
+      setTimeout(function() { el.style.display = 'none'; }, 2000);
+    }
+
+    // save buttons
+    document.querySelectorAll('.admin-save').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var key = btn.getAttribute('data-save');
+        if (key === 'about') {
+          setData('about', document.getElementById('about-text-edit').value);
+          flashSaved('about');
+        } else if (key === 'music') {
+          setData('song', {
+            title: document.getElementById('song-title').value,
+            artist: document.getElementById('song-artist').value,
+            url: document.getElementById('song-url').value
+          });
+          flashSaved('music');
+        } else if (key === 'password') {
+          var sw = document.getElementById('safe-word').value;
+          var np = document.getElementById('new-pw').value;
+          var cp = document.getElementById('confirm-pw').value;
+          var pwErr = document.getElementById('pw-error');
+          pwErr.style.display = 'none';
+
+          if (sw !== '1979Victoria') {
+            pwErr.textContent = 'incorrect safe word';
+            pwErr.style.display = 'block';
+            return;
+          }
+          if (!np) {
+            pwErr.textContent = 'enter a new password';
+            pwErr.style.display = 'block';
+            return;
+          }
+          if (np !== cp) {
+            pwErr.textContent = 'passwords do not match';
+            pwErr.style.display = 'block';
+            return;
+          }
+          setData('password', np);
+          document.getElementById('safe-word').value = '';
+          document.getElementById('new-pw').value = '';
+          document.getElementById('confirm-pw').value = '';
+          flashSaved('password');
+        }
+      });
+    });
+
+    // create/edit post
+    var editIdEl = document.getElementById('post-edit-id');
+    var cancelBtn = document.getElementById('post-cancel-btn');
+    var formLabel = document.getElementById('post-form-label');
+    var createBtn = document.getElementById('post-create-btn');
+
+    function clearPostForm() {
+      document.getElementById('post-title').value = '';
+      document.getElementById('post-desc').value = '';
+      document.getElementById('post-body').value = '';
+      editIdEl.value = '';
+      cancelBtn.style.display = 'none';
+      formLabel.textContent = 'create new post';
+      createBtn.textContent = 'publish post';
+    }
+
+    cancelBtn.addEventListener('click', function() {
+      clearPostForm();
+    });
+
+    createBtn.addEventListener('click', function() {
+      var title = document.getElementById('post-title').value;
+      var desc = document.getElementById('post-desc').value;
+      var body = document.getElementById('post-body').value;
+      if (!title) return;
+
+      var posts = getData('posts') || [];
+      var editId = editIdEl.value;
+
+      if (editId) {
+        // update existing post
+        for (var i = 0; i < posts.length; i++) {
+          if (String(posts[i].id) === editId) {
+            posts[i].title = title;
+            posts[i].description = desc;
+            posts[i].body = body;
+            break;
+          }
+        }
+      } else {
+        // new post
+        posts.unshift({
+          id: Date.now(),
+          title: title,
+          description: desc,
+          body: body,
+          pubDate: new Date().toISOString(),
+          pinned: false
+        });
+      }
+
+      setData('posts', posts);
+      clearPostForm();
+      flashEl(document.getElementById('post-saved'));
+      renderPosts();
+    });
+
+    // add to playlist
+    document.getElementById('playlist-add-btn').addEventListener('click', function() {
+      var title = document.getElementById('playlist-title').value;
+      var artist = document.getElementById('playlist-artist').value;
+      var url = document.getElementById('playlist-url').value;
+      if (!title) return;
+
+      var pl = getData('playlist') || [];
+      pl.push({ title: title, artist: artist, url: url });
+      setData('playlist', pl);
+      document.getElementById('playlist-title').value = '';
+      document.getElementById('playlist-artist').value = '';
+      document.getElementById('playlist-url').value = '';
+      renderPlaylist();
+    });
+
+    // add to corner
+    document.getElementById('corner-add-btn').addEventListener('click', function() {
+      var type = document.getElementById('corner-type').value;
+      var title = document.getElementById('corner-title').value;
+      var url = document.getElementById('corner-url').value;
+      var desc = document.getElementById('corner-desc').value;
+      if (!title || !url) return;
+
+      var items = getData('corner_items') || [];
+      items.unshift({ type: type, title: title, url: url, description: desc, date: new Date().toISOString() });
+      setData('corner_items', items);
+      document.getElementById('corner-title').value = '';
+      document.getElementById('corner-url').value = '';
+      document.getElementById('corner-desc').value = '';
+      flashEl(document.getElementById('corner-saved'));
+      renderCorner();
+    });
+
+    // ticker
+    document.getElementById('ticker-save-btn').addEventListener('click', function() {
+      var val = document.getElementById('ticker-edit').value;
+      if (val) {
+        setData('ticker', val);
+        var msg = document.getElementById('ticker-saved');
+        msg.style.display = 'block';
+        setTimeout(function() { msg.style.display = 'none'; }, 2000);
+      }
+    });
+
+    // pawcam gifs
+    document.getElementById('pawcam-add-btn').addEventListener('click', function() {
+      var url = document.getElementById('pawcam-url').value;
+      if (!url) return;
+      var gifs = getData('pawcam_gifs') || [];
+      gifs.push(url);
+      setData('pawcam_gifs', gifs);
+      document.getElementById('pawcam-url').value = '';
+      renderPawcam();
+    });
+
+    document.getElementById('pawcam-clear-btn').addEventListener('click', function() {
+      if (confirm('remove all gifs from paw cam?')) {
+        setData('pawcam_gifs', []);
+        renderPawcam();
+      }
+    });
+
+    // pawcam file upload
+    document.getElementById('pawcam-file').addEventListener('change', function(e) {
+      var files = Array.from(e.target.files);
+      var status = document.getElementById('pawcam-upload-status');
+      if (!files.length) return;
+
+      var gifs = getData('pawcam_gifs') || [];
+      var loaded = 0;
+      var total = files.length;
+      status.textContent = 'uploading 0/' + total + '...';
+
+      files.forEach(function(file) {
+        if (!file.type.match('image/gif') && !file.name.endsWith('.gif')) {
+          loaded++;
+          if (loaded === total) {
+            status.textContent = total + ' done!';
+            renderPawcam();
+          }
+          return;
+        }
+
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          gifs.push(ev.target.result);
+          try {
+            setData('pawcam_gifs', gifs);
+          } catch(err) {
+            // localStorage full
+            status.textContent = 'storage full! use URLs instead.';
+            gifs.pop();
+          }
+          loaded++;
+          status.textContent = 'uploading ' + loaded + '/' + total + '...';
+          if (loaded === total) {
+            status.textContent = loaded + ' gif' + (loaded > 1 ? 's' : '') + ' added!';
+            renderPawcam();
+            setTimeout(function() { status.textContent = ''; }, 3000);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+
+      e.target.value = '';
+    });
+
+    // export
+    document.getElementById('export-btn').addEventListener('click', function() {
+      var data = {
+        about: getData('about'),
+        posts: getData('posts'),
+        song: getData('song'),
+        playlist: getData('playlist'),
+        corner_items: getData('corner_items')
+      };
+      var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'pawsemedia-data.json';
+      a.click();
+    });
+
+    function renderPosts() {
+      var posts = getData('posts') || [];
+      var el = document.getElementById('posts-list');
+      if (posts.length === 0) {
+        el.innerHTML = '<div style="color:rgba(255,255,255,0.3)">no posts yet</div>';
+        return;
+      }
+      el.innerHTML = posts.map(function(p, i) {
+        var isPinned = p.pinned ? true : false;
+        return '<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+          '<div><div style="color:#fff;font-weight:500;">' + (isPinned ? '[pinned] ' : '') + p.title + '</div>' +
+          '<div style="font-size:10px;color:rgba(255,255,255,0.2);margin-top:2px;">' + new Date(p.pubDate).toLocaleDateString() + '</div></div>' +
+          '<div style="display:flex;gap:4px;">' +
+          '<button class="btn post-pin-btn" data-idx="' + i + '" style="font-size:9px;padding:3px 8px;">' + (isPinned ? 'unpin' : 'pin') + '</button>' +
+          '<button class="btn post-edit-btn" data-idx="' + i + '" style="font-size:9px;padding:3px 8px;">edit</button>' +
+          '<button class="btn post-delete-btn" data-idx="' + i + '" style="font-size:9px;padding:3px 8px;">delete</button>' +
+          '</div></div></div>';
+      }).join('');
+
+      el.querySelectorAll('.post-delete-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var idx = parseInt(btn.getAttribute('data-idx'));
+          posts.splice(idx, 1);
+          setData('posts', posts);
+          renderPosts();
+        });
+      });
+
+      el.querySelectorAll('.post-edit-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var idx = parseInt(btn.getAttribute('data-idx'));
+          var p = posts[idx];
+          document.getElementById('post-title').value = p.title;
+          document.getElementById('post-desc').value = p.description || '';
+          document.getElementById('post-body').value = p.body || '';
+          editIdEl.value = String(p.id);
+          cancelBtn.style.display = 'inline-block';
+          formLabel.textContent = 'editing: ' + p.title;
+          createBtn.textContent = 'save changes';
+        });
+      });
+
+      el.querySelectorAll('.post-pin-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var idx = parseInt(btn.getAttribute('data-idx'));
+          posts[idx].pinned = !posts[idx].pinned;
+          setData('posts', posts);
+          renderPosts();
+        });
+      });
+    }
+
+    function renderPlaylist() {
+      var pl = getData('playlist') || [];
+      var el = document.getElementById('playlist-list');
+      if (pl.length === 0) {
+        el.innerHTML = '<div style="font-size:13px;color:rgba(255,255,255,0.3)">no songs in playlist yet</div>';
+        return;
+      }
+      el.innerHTML = pl.map(function(s, i) {
+        return '<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;">' +
+          '<div><span style="color:#fff;">' + s.title + '</span> <span style="color:rgba(255,255,255,0.3);">— ' + s.artist + '</span></div>' +
+          '<button class="btn pl-delete-btn" data-idx="' + i + '" style="font-size:9px;padding:3px 8px;">remove</button>' +
+          '</div>';
+      }).join('');
+
+      el.querySelectorAll('.pl-delete-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var idx = parseInt(btn.getAttribute('data-idx'));
+          pl.splice(idx, 1);
+          setData('playlist', pl);
+          renderPlaylist();
+        });
+      });
+    }
+
+    function renderCorner() {
+      var items = getData('corner_items') || [];
+      var el = document.getElementById('corner-list');
+      if (items.length === 0) {
+        el.innerHTML = '<div style="color:rgba(255,255,255,0.3)">no items yet</div>';
+        return;
+      }
+      el.innerHTML = items.map(function(item, i) {
+        return '<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;">' +
+          '<div><div style="color:#fff;font-weight:500;">' + item.title + '</div>' +
+          '<div style="font-size:10px;color:rgba(255,255,255,0.2);margin-top:2px;">' + item.type + '</div></div>' +
+          '<button class="btn corner-delete-btn" data-idx="' + i + '" style="font-size:9px;padding:3px 8px;">remove</button>' +
+          '</div>';
+      }).join('');
+
+      el.querySelectorAll('.corner-delete-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var idx = parseInt(btn.getAttribute('data-idx'));
+          items.splice(idx, 1);
+          setData('corner_items', items);
+          renderCorner();
+        });
+      });
+    }
+
+    function renderPawcam() {
+      var gifs = getData('pawcam_gifs') || [];
+      var el = document.getElementById('pawcam-list');
+      if (gifs.length === 0) {
+        el.innerHTML = '<div style="color:rgba(255,255,255,0.3)">no gifs added</div>';
+        return;
+      }
+      el.innerHTML = gifs.map(function(url, i) {
+        var isUpload = url.indexOf('data:') === 0;
+        var label = isUpload ? '<span style="color:rgba(255,255,255,0.25);font-style:italic;">uploaded gif</span>' :
+          '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + url + '</span>';
+        return '<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;gap:10px;">' +
+          '<div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;">' +
+          '<img src="' + url + '" style="width:40px;height:40px;object-fit:cover;border-radius:4px;flex-shrink:0;" />' +
+          '<div style="font-size:11px;color:rgba(255,255,255,0.4);min-width:0;flex:1;">' + label + '</div>' +
+          '</div>' +
+          '<button class="btn pawcam-del-btn" data-idx="' + i + '" style="font-size:9px;padding:3px 8px;flex-shrink:0;">remove</button>' +
+          '</div>';
+      }).join('');
+
+      el.querySelectorAll('.pawcam-del-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var idx = parseInt(btn.getAttribute('data-idx'));
+          gifs.splice(idx, 1);
+          setData('pawcam_gifs', gifs);
+          renderPawcam();
+        });
+      });
+    }
+
+    function loadAdmin() {
+      document.getElementById('about-text-edit').value = getData('about') || '';
+      var song = getData('song') || {};
+      document.getElementById('song-title').value = song.title || '';
+      document.getElementById('song-artist').value = song.artist || '';
+      document.getElementById('song-url').value = song.url || '';
+      renderPosts();
+      renderPlaylist();
+      renderCorner();
+      renderPawcam();
+      document.getElementById('ticker-edit').value = getData('ticker') || '';
+    }
+  })();
+</script>

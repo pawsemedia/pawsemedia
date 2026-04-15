@@ -1,0 +1,115 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('blog')).sort(
+  (a, b) => new Date(b.data.pubDate).valueOf() - new Date(a.data.pubDate).valueOf()
+);
+
+const formatDate = (date: Date) => {
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toLowerCase();
+};
+---
+
+<BaseLayout title="posts — pawse media">
+  <section style="padding-top: 32px; position: relative;">
+    <h1 style="font-size: 24px; font-weight: 500; letter-spacing: 3px; margin-bottom: 16px;">posts</h1>
+    <div class="post-list" id="all-posts">
+      {posts.map((post) => (
+        <a href={`/posts/${post.id}`} class="post-item">
+          <div>
+            <div class="post-item__title">{post.data.title}</div>
+            {post.data.description && (
+              <div class="post-item__desc">{post.data.description}</div>
+            )}
+          </div>
+          <div class="post-item__date">{formatDate(new Date(post.data.pubDate))}</div>
+        </a>
+      ))}
+    </div>
+    <!-- admin posts appear here -->
+    <div id="admin-posts-list"></div>
+
+    <!-- post viewer for admin posts -->
+    <div id="post-viewer" style="display:none;">
+      <div style="margin-bottom: 12px;">
+        <button class="btn" id="post-viewer-back">← back to posts</button>
+      </div>
+      <div class="card">
+        <div id="post-viewer-date" style="font-size: 10px; letter-spacing: 2px; color: rgba(255,255,255,0.2); margin-bottom: 6px;"></div>
+        <h2 id="post-viewer-title" style="font-size: 22px; font-weight: 500; margin-bottom: 4px;"></h2>
+        <div id="post-viewer-desc" style="font-size: 12px; color: rgba(255,255,255,0.35); margin-bottom: 16px;"></div>
+        <div id="post-viewer-body" style="font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.6); white-space: pre-wrap;"></div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .post-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  #admin-posts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 3px;
+  }
+</style>
+
+<script is:inline>
+  (function() {
+    var posts = [];
+    try { posts = JSON.parse(localStorage.getItem('pawse_posts')) || []; } catch(e) {}
+    var listEl = document.getElementById('admin-posts-list');
+    var viewer = document.getElementById('post-viewer');
+    var allPosts = document.getElementById('all-posts');
+    var backBtn = document.getElementById('post-viewer-back');
+
+    function renderList() {
+      if (!posts.length) return;
+      listEl.innerHTML = posts.map(function(p) {
+        var d = new Date(p.pubDate);
+        var date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toLowerCase();
+        return '<div class="post-item" data-id="' + p.id + '" style="cursor:pointer;">' +
+          '<div><div class="post-item__title">' + p.title + '</div>' +
+          (p.description ? '<div class="post-item__desc">' + p.description + '</div>' : '') +
+          '</div><div class="post-item__date">' + date + '</div></div>';
+      }).join('');
+
+      listEl.querySelectorAll('.post-item').forEach(function(item) {
+        item.addEventListener('click', function() {
+          var id = parseInt(item.getAttribute('data-id'));
+          showPost(id);
+        });
+      });
+    }
+
+    function showPost(id) {
+      var post = posts.find(function(p) { return p.id === id; });
+      if (!post) return;
+      allPosts.style.display = 'none';
+      listEl.style.display = 'none';
+      viewer.style.display = 'block';
+      document.getElementById('post-viewer-title').textContent = post.title;
+      document.getElementById('post-viewer-desc').textContent = post.description || '';
+      document.getElementById('post-viewer-body').textContent = post.body || '';
+      document.getElementById('post-viewer-date').textContent = new Date(post.pubDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toLowerCase();
+    }
+
+    backBtn.addEventListener('click', function() {
+      viewer.style.display = 'none';
+      allPosts.style.display = 'flex';
+      listEl.style.display = 'flex';
+    });
+
+    // check URL for ?view=ID
+    var params = new URLSearchParams(window.location.search);
+    var viewId = params.get('view');
+    if (viewId) showPost(parseInt(viewId));
+
+    renderList();
+  })();
+</script>

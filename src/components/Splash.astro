@@ -1,0 +1,73 @@
+---
+---
+
+<div id="splash-screen" class="splash">
+  <div class="splash__logo-wrap" id="splash-logo">
+    <img src="/logo-white.png" alt="pawse media" class="splash__logo" />
+  </div>
+</div>
+
+<style>
+  .splash {
+    position: fixed;
+    inset: 0;
+    background: #000000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    cursor: pointer;
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .splash.hidden {
+    opacity: 0;
+    transform: scale(1.03);
+    pointer-events: none;
+  }
+
+  .splash__logo-wrap {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.3s ease;
+  }
+
+  .splash__logo-wrap:hover {
+    transform: scale(1.12);
+    filter: drop-shadow(0 0 40px rgba(255,255,255,0.08));
+  }
+
+  .splash__logo-wrap:active {
+    transform: scale(0.95);
+  }
+
+  .splash__logo {
+    width: 350px;
+    height: 350px;
+    object-fit: contain;
+  }
+</style>
+
+<script is:inline>
+  (function() {
+    var splash = document.getElementById('splash-screen');
+    var logo = document.getElementById('splash-logo');
+    if (!splash) return;
+
+    // hover sound
+    logo.addEventListener('mouseenter', function() {
+      if (window.pawsePlaySound) {
+        window.pawsePlaySound('sfx-hover-splash');
+      }
+    });
+
+    // click to enter
+    splash.addEventListener('click', function() {
+      if (window.pawsePlaySound) {
+        window.pawsePlaySound('sfx-splash');
+      }
+      splash.classList.add('hidden');
+      setTimeout(function() {
+        splash.style.display = 'none';
+      }, 600);
+    });
+  })();
+</script>

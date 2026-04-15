@@ -1,0 +1,67 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="the corner — pawse media">
+  <section style="padding-top: 32px; position: relative;">
+    <span class="bumper bumper--serif" style="top: 28px; right: 4px; transform: rotate(-2deg); font-size: 12px;">cool stuff</span>
+    <h1 style="font-size: 28px; font-weight: 700; letter-spacing: 3px; margin-bottom: 20px;">the corner</h1>
+
+    <div class="corner-nav">
+      <a href="/corner/videos" class="corner-nav__item">
+        <div class="corner-tile" style="width: 100%; aspect-ratio: auto; padding: 24px;">
+          <span class="bumper bumper--serif" style="top: 8px; right: 10px; transform: rotate(3deg); font-size: 10px;">watch</span>
+          <div style="text-align: center;">
+            <div class="corner-tile__icon" style="width: 40px; height: 40px; margin: 0 auto 8px; border-radius: 10px;">
+              <span style="font-size: 16px; color: #fff;">&#9654;</span>
+            </div>
+            <div style="font-size: 16px; color: #fff; font-weight: 600;">videos</div>
+            <div style="font-size: 11px; color: rgba(255,255,255,0.25); margin-top: 4px;">youtube links and clips</div>
+          </div>
+        </div>
+      </a>
+
+      <a href="/corner/pics" class="corner-nav__item">
+        <div class="corner-tile" style="width: 100%; aspect-ratio: auto; padding: 24px;">
+          <span class="bumper bumper--impact" style="top: 8px; right: 10px; transform: rotate(-2deg); font-size: 10px;">LOOK</span>
+          <div style="text-align: center;">
+            <div class="corner-tile__icon" style="width: 40px; height: 40px; margin: 0 auto 8px; border-radius: 10px;">
+              <span style="font-size: 16px; color: #fff;">&#9733;</span>
+            </div>
+            <div style="font-size: 16px; color: #fff; font-weight: 600;">pics</div>
+            <div style="font-size: 11px; color: rgba(255,255,255,0.25); margin-top: 4px;">photos and images</div>
+          </div>
+        </div>
+      </a>
+
+      <a href="/corner/music" class="corner-nav__item">
+        <div class="corner-tile" style="width: 100%; aspect-ratio: auto; padding: 24px;">
+          <span class="bumper bumper--mono" style="top: 8px; right: 10px; transform: rotate(1deg); font-size: 10px;">new!</span>
+          <div style="text-align: center;">
+            <div class="corner-tile__icon" style="width: 40px; height: 40px; margin: 0 auto 8px; border-radius: 10px;">
+              <span style="font-size: 16px; color: #fff;">&#9835;</span>
+            </div>
+            <div style="font-size: 16px; color: #fff; font-weight: 600;">music</div>
+            <div style="font-size: 11px; color: rgba(255,255,255,0.25); margin-top: 4px;">tracks and playlists</div>
+          </div>
+        </div>
+      </a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .corner-nav {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .corner-nav__item {
+    text-decoration: none;
+  }
+
+  @media (max-width: 480px) {
+    .corner-nav { grid-template-columns: 1fr; }
+  }
+</style>

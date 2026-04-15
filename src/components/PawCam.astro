@@ -1,0 +1,363 @@
+---
+---
+
+<div id="pawcam" class="pawcam">
+  <div id="pawcam-titlebar" class="pawcam__titlebar">
+    <span class="pawcam__title">paw cam</span>
+    <div class="pawcam__controls">
+      <button class="pawcam__btn pawcam__btn--min" id="pawcam-min" title="minimize">─</button>
+      <button class="pawcam__btn pawcam__btn--close" id="pawcam-close" title="close">×</button>
+    </div>
+  </div>
+  <div id="pawcam-body" class="pawcam__body">
+    <div class="pawcam__screen" id="pawcam-screen">
+      <div class="pawcam__loading">connecting...</div>
+    </div>
+    <div class="pawcam__footer">
+      <div class="pawcam__rec"></div>
+      <span class="pawcam__status">LIVE</span>
+      <span class="pawcam__channel" id="pawcam-channel">ch 01</span>
+    </div>
+  </div>
+</div>
+
+<style>
+  .pawcam {
+    position: fixed;
+    left: 20px;
+    top: 120px;
+    width: 320px;
+    z-index: 60;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6), 0 0 1px rgba(255,255,255,0.1);
+    background: #0c0c0c;
+    cursor: default;
+    user-select: none;
+    transition: box-shadow 0.2s;
+    resize: both;
+    min-width: 200px;
+    min-height: 180px;
+    max-width: 80vw;
+    max-height: 80vh;
+  }
+
+  .pawcam:hover {
+    box-shadow: 0 6px 28px rgba(0,0,0,0.7), 0 0 1px rgba(255,255,255,0.15);
+  }
+
+  .pawcam__titlebar {
+    background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.03) 100%);
+    padding: 6px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: grab;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .pawcam__titlebar:active {
+    cursor: grabbing;
+  }
+
+  .pawcam__title {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.5);
+    font-family: "Courier New", monospace;
+    font-weight: 600;
+  }
+
+  .pawcam__controls {
+    display: flex;
+    gap: 4px;
+  }
+
+  .pawcam__btn {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.3);
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: background 0.2s, color 0.2s;
+    font-family: inherit;
+  }
+
+  .pawcam__btn:hover {
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.7);
+  }
+
+  .pawcam__btn--close:hover {
+    background: rgba(255,80,80,0.3);
+    border-color: rgba(255,80,80,0.4);
+    color: rgba(255,150,150,0.9);
+  }
+
+  .pawcam__body {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .pawcam__screen {
+    width: 100%;
+    flex: 1;
+    min-height: 180px;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .pawcam__screen img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    image-rendering: auto;
+  }
+
+  .pawcam__loading {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    color: rgba(255,255,255,0.2);
+    letter-spacing: 2px;
+    animation: blink 1.2s infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .pawcam__footer {
+    padding: 5px 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.03);
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .pawcam__rec {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ff3333;
+    animation: blink 1.5s infinite;
+    box-shadow: 0 0 4px rgba(255,50,50,0.4);
+  }
+
+  .pawcam__status {
+    font-family: 'Courier New', monospace;
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: rgba(255,80,80,0.5);
+  }
+
+  .pawcam__channel {
+    font-family: 'Courier New', monospace;
+    font-size: 8px;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.15);
+    margin-left: auto;
+  }
+
+  .pawcam--minimized .pawcam__body {
+    display: none;
+  }
+
+  .pawcam--minimized {
+    width: 160px;
+    min-height: auto;
+    max-height: none;
+    resize: none;
+  }
+
+  .pawcam--hidden {
+    display: none;
+  }
+
+  .pawcam__scanlines {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.15) 2px,
+      rgba(0,0,0,0.15) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .pawcam__timestamp {
+    position: absolute;
+    bottom: 4px;
+    right: 6px;
+    font-family: 'Courier New', monospace;
+    font-size: 8px;
+    color: rgba(255,255,255,0.25);
+    z-index: 2;
+    text-shadow: 0 0 4px rgba(0,0,0,0.8);
+  }
+
+  @media (max-width: 640px) {
+    .pawcam {
+      width: 240px;
+      left: 10px;
+      top: 100px;
+      min-width: 160px;
+    }
+  }
+</style>
+
+<script is:inline>
+  (function() {
+    var defaultGifs = [
+      'https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif',
+      'https://media.giphy.com/media/MDJ9IbxxvDUQM/giphy.gif',
+      'https://media.giphy.com/media/VbnUQpnihPSIgIXuZv/giphy.gif',
+      'https://media.giphy.com/media/BzyTuYCmvSORqs1ABM/giphy.gif',
+      'https://media.giphy.com/media/mlvseq9yvZhba/giphy.gif',
+      'https://media.giphy.com/media/ICOgUNjpvO0PC/giphy.gif',
+      'https://media.giphy.com/media/nR4L10XlJcSeQ/giphy.gif',
+      'https://media.giphy.com/media/3oriO0OEd9QIDdllqo/giphy.gif'
+    ];
+    var catGifs = defaultGifs;
+    try {
+      var stored = JSON.parse(localStorage.getItem('pawse_pawcam_gifs'));
+      if (stored && stored.length > 0) catGifs = stored;
+    } catch(e) {}
+
+    var cam = document.getElementById('pawcam');
+    var titlebar = document.getElementById('pawcam-titlebar');
+    var screen = document.getElementById('pawcam-screen');
+    var closeBtn = document.getElementById('pawcam-close');
+    var minBtn = document.getElementById('pawcam-min');
+    var channelEl = document.getElementById('pawcam-channel');
+    var currentGif = 0;
+
+    // load first gif after delay
+    setTimeout(function() {
+      loadGif();
+    }, 1500);
+
+    // cycle gifs
+    setInterval(function() {
+      if (!cam.classList.contains('pawcam--minimized') && !cam.classList.contains('pawcam--hidden')) {
+        currentGif = (currentGif + 1) % catGifs.length;
+        loadGif();
+      }
+    }, 8000);
+
+    function loadGif() {
+      var num = String(currentGif + 1).padStart(2, '0');
+      channelEl.textContent = 'ch ' + num;
+      screen.innerHTML = '<img src="' + catGifs[currentGif] + '" alt="paw cam" />' +
+        '<div class="pawcam__scanlines"></div>' +
+        '<div class="pawcam__timestamp">' + getTimestamp() + '</div>';
+    }
+
+    function getTimestamp() {
+      var d = new Date();
+      var h = String(d.getHours()).padStart(2, '0');
+      var m = String(d.getMinutes()).padStart(2, '0');
+      var s = String(d.getSeconds()).padStart(2, '0');
+      return h + ':' + m + ':' + s;
+    }
+
+    // update timestamp every second
+    setInterval(function() {
+      var ts = screen.querySelector('.pawcam__timestamp');
+      if (ts) ts.textContent = getTimestamp();
+    }, 1000);
+
+    // close
+    closeBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      cam.classList.add('pawcam--hidden');
+    });
+
+    // minimize
+    minBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      cam.classList.toggle('pawcam--minimized');
+    });
+
+    // dragging
+    var isDragging = false;
+    var dragOffX = 0;
+    var dragOffY = 0;
+
+    titlebar.addEventListener('mousedown', function(e) {
+      if (e.target.closest('.pawcam__btn')) return;
+      isDragging = true;
+      var rect = cam.getBoundingClientRect();
+      dragOffX = e.clientX - rect.left;
+      dragOffY = e.clientY - rect.top;
+      cam.style.transition = 'none';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function(e) {
+      if (!isDragging) return;
+      var x = e.clientX - dragOffX;
+      var y = e.clientY - dragOffY;
+      x = Math.max(0, Math.min(x, window.innerWidth - cam.offsetWidth));
+      y = Math.max(0, Math.min(y, window.innerHeight - cam.offsetHeight));
+      cam.style.left = x + 'px';
+      cam.style.top = y + 'px';
+    });
+
+    document.addEventListener('mouseup', function() {
+      if (isDragging) {
+        isDragging = false;
+        cam.style.transition = '';
+      }
+    });
+
+    // touch support
+    titlebar.addEventListener('touchstart', function(e) {
+      if (e.target.closest('.pawcam__btn')) return;
+      isDragging = true;
+      var rect = cam.getBoundingClientRect();
+      var touch = e.touches[0];
+      dragOffX = touch.clientX - rect.left;
+      dragOffY = touch.clientY - rect.top;
+      cam.style.transition = 'none';
+    }, { passive: true });
+
+    document.addEventListener('touchmove', function(e) {
+      if (!isDragging) return;
+      var touch = e.touches[0];
+      var x = touch.clientX - dragOffX;
+      var y = touch.clientY - dragOffY;
+      x = Math.max(0, Math.min(x, window.innerWidth - cam.offsetWidth));
+      y = Math.max(0, Math.min(y, window.innerHeight - cam.offsetHeight));
+      cam.style.left = x + 'px';
+      cam.style.top = y + 'px';
+    }, { passive: true });
+
+    document.addEventListener('touchend', function() {
+      if (isDragging) {
+        isDragging = false;
+        cam.style.transition = '';
+      }
+    });
+  })();
+</script>
