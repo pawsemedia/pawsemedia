@@ -568,7 +568,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       var total = files.length;
       status.textContent = 'uploading 0/' + total + '...';
 
-      files.forEach(function(file) {
+      files.forEach(async function(file) {
         if (!file.type.match('image/gif') && !file.name.endsWith('.gif')) {
           loaded++;
           if (loaded === total) {
@@ -638,7 +638,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           '</div></div></div>';
       }).join('');
 
-      el.querySelectorAll('.post-delete-btn').forEach(function(btn) {
+      el.querySelectorAll('.post-delete-btn').forEach(async function(btn) {
         btn.addEventListener('click', async function() {
           var idx = parseInt(btn.getAttribute('data-idx'));
           posts.splice(idx, 1);
@@ -661,7 +661,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         });
       });
 
-      el.querySelectorAll('.post-pin-btn').forEach(function(btn) {
+      el.querySelectorAll('.post-pin-btn').forEach(async function(btn) {
         btn.addEventListener('click', async function() {
           var idx = parseInt(btn.getAttribute('data-idx'));
           posts[idx].pinned = !posts[idx].pinned;
@@ -685,7 +685,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           '</div>';
       }).join('');
 
-      el.querySelectorAll('.pl-delete-btn').forEach(function(btn) {
+      el.querySelectorAll('.pl-delete-btn').forEach(async function(btn) {
         btn.addEventListener('click', async function() {
           var idx = parseInt(btn.getAttribute('data-idx'));
           pl.splice(idx, 1);
@@ -710,7 +710,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           '</div>';
       }).join('');
 
-      el.querySelectorAll('.corner-delete-btn').forEach(function(btn) {
+      el.querySelectorAll('.corner-delete-btn').forEach(async function(btn) {
         btn.addEventListener('click', async function() {
           var idx = parseInt(btn.getAttribute('data-idx'));
           items.splice(idx, 1);
@@ -740,7 +740,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           '</div>';
       }).join('');
 
-      el.querySelectorAll('.pawcam-del-btn').forEach(function(btn) {
+      el.querySelectorAll('.pawcam-del-btn').forEach(async function(btn) {
         btn.addEventListener('click', async function() {
           var idx = parseInt(btn.getAttribute('data-idx'));
           gifs.splice(idx, 1);
