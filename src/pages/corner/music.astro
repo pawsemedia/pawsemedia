@@ -17,21 +17,22 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 <script is:inline>
   (function() {
-    var playlist = [];
-    try { playlist = JSON.parse(localStorage.getItem('pawse_playlist')) || []; } catch(e) {}
-    var el = document.getElementById('music-list');
-    if (playlist.length === 0) {
-      el.innerHTML = '<div style="font-size:13px;color:rgba(255,255,255,0.3);">no tracks yet — add some from the admin panel</div>';
-      return;
-    }
-    el.innerHTML = playlist.map(function(s, i) {
-      return '<div class="card" style="margin-bottom:6px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;">' +
-        '<div>' +
-        '<div style="font-size:14px;font-weight:600;color:#fff;">' + s.title + '</div>' +
-        '<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;">' + s.artist + '</div>' +
-        '</div>' +
-        (s.url ? '<a href="' + s.url + '" target="_blank" class="btn" style="font-size:9px;padding:4px 10px;">listen ↗</a>' : '') +
-        '</div>';
-    }).join('');
+    pawseApi.get('playlist').then(function(playlist) {
+      playlist = playlist || [];
+      var el = document.getElementById('music-list');
+      if (playlist.length === 0) {
+        el.innerHTML = '<div style="font-size:13px;color:rgba(255,255,255,0.3);">no tracks yet — add some from the admin panel</div>';
+        return;
+      }
+      el.innerHTML = playlist.map(function(s, i) {
+        return '<div class="card" style="margin-bottom:6px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;">' +
+          '<div>' +
+          '<div style="font-size:14px;font-weight:600;color:#fff;">' + s.title + '</div>' +
+          '<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;">' + s.artist + '</div>' +
+          '</div>' +
+          (s.url ? '<a href="' + s.url + '" target="_blank" class="btn" style="font-size:9px;padding:4px 10px;">listen ↗</a>' : '') +
+          '</div>';
+      }).join('');
+    });
   })();
 </script>
