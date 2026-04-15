@@ -296,28 +296,25 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 </style>
 
 <script is:inline>
-  (async function() {
+  (function() {
     var DEFAULT_PW = 'pawse2026';
 
     // API-backed getData/setData
-    async function getData(key) {
-      try {
-        var val = await pawseApi.get(key);
-        return val;
-      } catch(e) {
-        try { return JSON.parse(localStorage.getItem('pawse_' + key)); } catch(e2) { return null; }
-      }
+    // getData is sync — reads from local cache. loadAdmin() populates cache from API first.
+    var _cache = {};
+
+    function getData(key) {
+      if (_cache[key] !== undefined) return _cache[key];
+      try { return JSON.parse(localStorage.getItem('pawse_' + key)); } catch(e) { return null; }
     }
-    async function setData(key, val) {
-      try {
-        await pawseApi.set(key, val);
-      } catch(e) {}
-      // always keep localStorage in sync as fallback
+    function setData(key, val) {
+      _cache[key] = val;
       try { localStorage.setItem('pawse_' + key, JSON.stringify(val)); } catch(e) {}
+      pawseApi.set(key, val).catch(function(){});
     }
 
     // init defaults on server
-    await pawseApi.init();
+    pawseApi.init();
 
     var gate = document.getElementById('login-gate');
     var panel = document.getElementById('admin-panel');
@@ -329,34 +326,36 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     // check if already logged in this session
     var savedPw = sessionStorage.getItem('pawse_admin_pw');
     if (savedPw) {
-      var restored = await pawseApi.login(savedPw);
-      if (restored) {
-        gate.style.display = 'none';
-        panel.style.display = 'block';
-        await loadAdmin();
-      } else {
-        sessionStorage.removeItem('pawse_admin_pw');
-      }
+      pawseApi.login(savedPw).then(function(restored) {
+        if (restored) {
+          gate.style.display = 'none';
+          panel.style.display = 'block';
+          loadAdmin();
+        } else {
+          sessionStorage.removeItem('pawse_admin_pw');
+        }
+      });
     }
 
-    loginBtn.addEventListener('click', async function() {
-      var success = await pawseApi.login(pwInput.value);
-      if (success) {
-        sessionStorage.setItem('pawse_admin_pw', pwInput.value);
-        gate.style.display = 'none';
-        panel.style.display = 'block';
-        await loadAdmin();
-      } else {
-        loginError.style.display = 'block';
-        pwInput.value = '';
-      }
+    loginBtn.addEventListener('click', function() {
+      pawseApi.login(pwInput.value).then(function(success) {
+        if (success) {
+          sessionStorage.setItem('pawse_admin_pw', pwInput.value);
+          gate.style.display = 'none';
+          panel.style.display = 'block';
+          loadAdmin();
+        } else {
+          loginError.style.display = 'block';
+          pwInput.value = '';
+        }
+      });
     });
 
     pwInput.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') loginBtn.click();
     });
 
-    logoutBtn.addEventListener('click', async function() {
+    logoutBtn.addEventListener('click', function() {
       sessionStorage.removeItem('pawse_admin');
       sessionStorage.removeItem('pawse_admin_pw');
       window._pawsePassword = '';
@@ -370,7 +369,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     var tabs = document.querySelectorAll('.admin-tab');
     var sections = document.querySelectorAll('.admin-section');
     tabs.forEach(function(tab) {
-      tab.addEventListener('click', async function() {
+      tab.addEventListener('click', function() {
         tabs.forEach(function(t) { t.classList.remove('admin-tab--active'); });
         tab.classList.add('admin-tab--active');
         var target = tab.getAttribute('data-tab');
@@ -395,13 +394,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
     // save buttons
     document.querySelectorAll('.admin-save').forEach(function(btn) {
-      btn.addEventListener('click', async function() {
+      btn.addEventListener('click', function() {
         var key = btn.getAttribute('data-save');
         if (key === 'about') {
-          await setData('about', document.getElementById('about-text-edit').value);
+          setData('about', document.getElementById('about-text-edit').value);
           flashSaved('about');
         } else if (key === 'music') {
-          await setData('song', {
+          setData('song', {
             title: document.getElementById('song-title').value,
             artist: document.getElementById('song-artist').value,
             url: document.getElementById('song-url').value
@@ -429,7 +428,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             pwErr.style.display = 'block';
             return;
           }
-          await setData('password', np);
+          setData('password', np);
           window._pawsePassword = np;
           document.getElementById('safe-word').value = '';
           document.getElementById('new-pw').value = '';
@@ -455,17 +454,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       createBtn.textContent = 'publish post';
     }
 
-    cancelBtn.addEventListener('click', async function() {
+    cancelBtn.addEventListener('click', function() {
       clearPostForm();
     });
 
-    createBtn.addEventListener('click', async function() {
+    createBtn.addEventListener('click', function() {
       var title = document.getElementById('post-title').value;
       var desc = document.getElementById('post-desc').value;
       var body = document.getElementById('post-body').value;
       if (!title) return;
 
-      var posts = await getData('posts') || [];
+      var posts = getData('posts') || [];
       var editId = editIdEl.value;
 
       if (editId) {
@@ -488,51 +487,51 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         });
       }
 
-      await setData('posts', posts);
+      setData('posts', posts);
       clearPostForm();
       flashEl(document.getElementById('post-saved'));
-      await renderPosts();
+      renderPosts();
     });
 
     // add to playlist
-    document.getElementById('playlist-add-btn').addEventListener('click', async function() {
+    document.getElementById('playlist-add-btn').addEventListener('click', function() {
       var title = document.getElementById('playlist-title').value;
       var artist = document.getElementById('playlist-artist').value;
       var url = document.getElementById('playlist-url').value;
       if (!title) return;
 
-      var pl = await getData('playlist') || [];
+      var pl = getData('playlist') || [];
       pl.push({ title: title, artist: artist, url: url });
-      await setData('playlist', pl);
+      setData('playlist', pl);
       document.getElementById('playlist-title').value = '';
       document.getElementById('playlist-artist').value = '';
       document.getElementById('playlist-url').value = '';
-      await renderPlaylist();
+      renderPlaylist();
     });
 
     // add to corner
-    document.getElementById('corner-add-btn').addEventListener('click', async function() {
+    document.getElementById('corner-add-btn').addEventListener('click', function() {
       var type = document.getElementById('corner-type').value;
       var title = document.getElementById('corner-title').value;
       var url = document.getElementById('corner-url').value;
       var desc = document.getElementById('corner-desc').value;
       if (!title || !url) return;
 
-      var items = await getData('corner_items') || [];
+      var items = getData('corner_items') || [];
       items.unshift({ type: type, title: title, url: url, description: desc, date: new Date().toISOString() });
-      await setData('corner_items', items);
+      setData('corner_items', items);
       document.getElementById('corner-title').value = '';
       document.getElementById('corner-url').value = '';
       document.getElementById('corner-desc').value = '';
       flashEl(document.getElementById('corner-saved'));
-      await renderCorner();
+      renderCorner();
     });
 
     // ticker
-    document.getElementById('ticker-save-btn').addEventListener('click', async function() {
+    document.getElementById('ticker-save-btn').addEventListener('click', function() {
       var val = document.getElementById('ticker-edit').value;
       if (val) {
-        await setData('ticker', val);
+        setData('ticker', val);
         var msg = document.getElementById('ticker-saved');
         msg.style.display = 'block';
         setTimeout(function() { msg.style.display = 'none'; }, 2000);
@@ -540,40 +539,40 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     });
 
     // pawcam gifs
-    document.getElementById('pawcam-add-btn').addEventListener('click', async function() {
+    document.getElementById('pawcam-add-btn').addEventListener('click', function() {
       var url = document.getElementById('pawcam-url').value;
       if (!url) return;
-      var gifs = await getData('pawcam_gifs') || [];
+      var gifs = getData('pawcam_gifs') || [];
       gifs.push(url);
-      await setData('pawcam_gifs', gifs);
+      setData('pawcam_gifs', gifs);
       document.getElementById('pawcam-url').value = '';
-      await renderPawcam();
+      renderPawcam();
     });
 
-    document.getElementById('pawcam-clear-btn').addEventListener('click', async function() {
+    document.getElementById('pawcam-clear-btn').addEventListener('click', function() {
       if (confirm('remove all gifs from paw cam?')) {
-        await setData('pawcam_gifs', []);
-        await renderPawcam();
+        setData('pawcam_gifs', []);
+        renderPawcam();
       }
     });
 
     // pawcam file upload
-    document.getElementById('pawcam-file').addEventListener('change', async function(e) {
+    document.getElementById('pawcam-file').addEventListener('change', function(e) {
       var files = Array.from(e.target.files);
       var status = document.getElementById('pawcam-upload-status');
       if (!files.length) return;
 
-      var gifs = await getData('pawcam_gifs') || [];
+      var gifs = getData('pawcam_gifs') || [];
       var loaded = 0;
       var total = files.length;
       status.textContent = 'uploading 0/' + total + '...';
 
-      files.forEach(async function(file) {
+      files.forEach(function(file) {
         if (!file.type.match('image/gif') && !file.name.endsWith('.gif')) {
           loaded++;
           if (loaded === total) {
             status.textContent = total + ' done!';
-            await renderPawcam();
+            renderPawcam();
           }
           return;
         }
@@ -582,9 +581,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         reader.onload = function(ev) {
           gifs.push(ev.target.result);
           try {
-            await setData('pawcam_gifs', gifs);
+            setData('pawcam_gifs', gifs);
           } catch(err) {
-            // localStorage full
             status.textContent = 'storage full! use URLs instead.';
             gifs.pop();
           }
@@ -592,7 +590,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           status.textContent = 'uploading ' + loaded + '/' + total + '...';
           if (loaded === total) {
             status.textContent = loaded + ' gif' + (loaded > 1 ? 's' : '') + ' added!';
-            await renderPawcam();
+            renderPawcam();
             setTimeout(function() { status.textContent = ''; }, 3000);
           }
         };
@@ -603,13 +601,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     });
 
     // export
-    document.getElementById('export-btn').addEventListener('click', async function() {
+    document.getElementById('export-btn').addEventListener('click', function() {
       var data = {
-        about: await getData('about'),
-        posts: await getData('posts'),
-        song: await getData('song'),
-        playlist: await getData('playlist'),
-        corner_items: await getData('corner_items')
+        about: getData('about'),
+        posts: getData('posts'),
+        song: getData('song'),
+        playlist: getData('playlist'),
+        corner_items: getData('corner_items')
       };
       var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       var a = document.createElement('a');
@@ -618,8 +616,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       a.click();
     });
 
-    async function renderPosts() {
-      var posts = await getData('posts') || [];
+    function renderPosts() {
+      var posts = getData('posts') || [];
       var el = document.getElementById('posts-list');
       if (posts.length === 0) {
         el.innerHTML = '<div style="color:rgba(255,255,255,0.3)">no posts yet</div>';
@@ -638,17 +636,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           '</div></div></div>';
       }).join('');
 
-      el.querySelectorAll('.post-delete-btn').forEach(async function(btn) {
-        btn.addEventListener('click', async function() {
+      el.querySelectorAll('.post-delete-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
           var idx = parseInt(btn.getAttribute('data-idx'));
           posts.splice(idx, 1);
-          await setData('posts', posts);
-          await renderPosts();
+          setData('posts', posts);
+          renderPosts();
         });
       });
 
       el.querySelectorAll('.post-edit-btn').forEach(function(btn) {
-        btn.addEventListener('click', async function() {
+        btn.addEventListener('click', function() {
           var idx = parseInt(btn.getAttribute('data-idx'));
           var p = posts[idx];
           document.getElementById('post-title').value = p.title;
@@ -661,18 +659,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         });
       });
 
-      el.querySelectorAll('.post-pin-btn').forEach(async function(btn) {
-        btn.addEventListener('click', async function() {
+      el.querySelectorAll('.post-pin-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
           var idx = parseInt(btn.getAttribute('data-idx'));
           posts[idx].pinned = !posts[idx].pinned;
-          await setData('posts', posts);
-          await renderPosts();
+          setData('posts', posts);
+          renderPosts();
         });
       });
     }
 
-    async function renderPlaylist() {
-      var pl = await getData('playlist') || [];
+    function renderPlaylist() {
+      var pl = getData('playlist') || [];
       var el = document.getElementById('playlist-list');
       if (pl.length === 0) {
         el.innerHTML = '<div style="font-size:13px;color:rgba(255,255,255,0.3)">no songs in playlist yet</div>';
@@ -685,18 +683,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           '</div>';
       }).join('');
 
-      el.querySelectorAll('.pl-delete-btn').forEach(async function(btn) {
-        btn.addEventListener('click', async function() {
+      el.querySelectorAll('.pl-delete-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
           var idx = parseInt(btn.getAttribute('data-idx'));
           pl.splice(idx, 1);
-          await setData('playlist', pl);
-          await renderPlaylist();
+          setData('playlist', pl);
+          renderPlaylist();
         });
       });
     }
 
-    async function renderCorner() {
-      var items = await getData('corner_items') || [];
+    function renderCorner() {
+      var items = getData('corner_items') || [];
       var el = document.getElementById('corner-list');
       if (items.length === 0) {
         el.innerHTML = '<div style="color:rgba(255,255,255,0.3)">no items yet</div>';
@@ -710,18 +708,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           '</div>';
       }).join('');
 
-      el.querySelectorAll('.corner-delete-btn').forEach(async function(btn) {
-        btn.addEventListener('click', async function() {
+      el.querySelectorAll('.corner-delete-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
           var idx = parseInt(btn.getAttribute('data-idx'));
           items.splice(idx, 1);
-          await setData('corner_items', items);
-          await renderCorner();
+          setData('corner_items', items);
+          renderCorner();
         });
       });
     }
 
-    async function renderPawcam() {
-      var gifs = await getData('pawcam_gifs') || [];
+    function renderPawcam() {
+      var gifs = getData('pawcam_gifs') || [];
       var el = document.getElementById('pawcam-list');
       if (gifs.length === 0) {
         el.innerHTML = '<div style="color:rgba(255,255,255,0.3)">no gifs added</div>';
@@ -740,27 +738,35 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           '</div>';
       }).join('');
 
-      el.querySelectorAll('.pawcam-del-btn').forEach(async function(btn) {
-        btn.addEventListener('click', async function() {
+      el.querySelectorAll('.pawcam-del-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
           var idx = parseInt(btn.getAttribute('data-idx'));
           gifs.splice(idx, 1);
-          await setData('pawcam_gifs', gifs);
-          await renderPawcam();
+          setData('pawcam_gifs', gifs);
+          renderPawcam();
         });
       });
     }
 
-    async function loadAdmin() {
-      document.getElementById('about-text-edit').value = await getData('about') || '';
-      var song = await getData('song') || {};
-      document.getElementById('song-title').value = song.title || '';
-      document.getElementById('song-artist').value = song.artist || '';
-      document.getElementById('song-url').value = song.url || '';
-      await renderPosts();
-      await renderPlaylist();
-      await renderCorner();
-      await renderPawcam();
-      document.getElementById('ticker-edit').value = await getData('ticker') || '';
+    function loadAdmin() {
+      // fetch all data from API into cache, then render
+      pawseApi.loadAll().then(function(data) {
+        if (data) {
+          Object.keys(data).forEach(function(k) {
+            if (data[k] !== null) _cache[k] = data[k];
+          });
+        }
+        document.getElementById('about-text-edit').value = getData('about') || '';
+        var song = getData('song') || {};
+        document.getElementById('song-title').value = song.title || '';
+        document.getElementById('song-artist').value = song.artist || '';
+        document.getElementById('song-url').value = song.url || '';
+        renderPosts();
+        renderPlaylist();
+        renderCorner();
+        renderPawcam();
+        document.getElementById('ticker-edit').value = getData('ticker') || '';
+      });
     }
   })();
 </script>
