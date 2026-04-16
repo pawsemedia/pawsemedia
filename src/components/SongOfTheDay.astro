@@ -342,27 +342,26 @@ const { title = "Track Title", artist = "Artist" } = Astro.props;
       if (isPlaying) pause(); else play();
     });
 
-    // progress bar update
-    if (!isYoutube) {
-      audio.addEventListener('timeupdate', function() {
-        if (audio.duration) {
-          var pct = (audio.currentTime / audio.duration) * 100;
-          progressBar.style.width = pct + '%';
-          timeEl.textContent = formatTime(audio.currentTime);
+    // progress bar update — works for both audio and youtube
+    audio.addEventListener('timeupdate', function() {
+      if (audio.duration) {
+        var pct = (audio.currentTime / audio.duration) * 100;
+        progressBar.style.width = pct + '%';
+        timeEl.textContent = formatTime(audio.currentTime);
+      }
+    });
+
+    // youtube progress — poll every 500ms
+    setInterval(function() {
+      if (ytPlayer && ytReady && typeof ytPlayer.getDuration === 'function') {
+        var dur = ytPlayer.getDuration();
+        var cur = ytPlayer.getCurrentTime();
+        if (dur > 0) {
+          progressBar.style.width = (cur / dur * 100) + '%';
+          timeEl.textContent = formatTime(cur);
         }
-      });
-    } else {
-      setInterval(function() {
-        if (ytPlayer && ytReady && ytPlayer.getDuration) {
-          var dur = ytPlayer.getDuration();
-          var cur = ytPlayer.getCurrentTime();
-          if (dur > 0) {
-            progressBar.style.width = (cur / dur * 100) + '%';
-            timeEl.textContent = formatTime(cur);
-          }
-        }
-      }, 500);
-    }
+      }
+    }, 500);
 
     // click on progress bar to seek
     songBar.addEventListener('click', function(e) {

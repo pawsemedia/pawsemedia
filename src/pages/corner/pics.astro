@@ -31,16 +31,24 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   (function() {
     pawseApi.get('corner_items').then(function(items) {
       items = items || [];
-      var pics = items.filter(function(i) { return i.type === 'image'; });
+      var pics = items.filter(function(i) { return i.type === 'image' || i.type === 'link-pics'; });
       var grid = document.getElementById('pics-grid');
       if (pics.length === 0) {
         grid.innerHTML = '<div style="font-size:13px;color:rgba(255,255,255,0.3);grid-column:1/-1;">no pics yet — add some from the admin panel</div>';
         return;
       }
       grid.innerHTML = pics.map(function(p) {
-        return '<a href="' + p.url + '" target="_blank" style="display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);transition:border-color 0.2s;">' +
-          '<img src="' + p.url + '" alt="' + p.title + '" style="width:100%;height:100%;object-fit:cover;" />' +
-          '</a>';
+        if (p.type === 'image') {
+          return '<a href="' + p.url + '" target="_blank" style="display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);transition:border-color 0.2s;">' +
+            '<img src="' + p.url + '" alt="' + p.title + '" style="width:100%;height:100%;object-fit:cover;" />' +
+            '</a>';
+        } else {
+          return '<a href="' + p.url + '" target="_blank" class="card" style="display:flex;align-items:center;justify-content:center;aspect-ratio:1;text-decoration:none;">' +
+            '<div style="text-align:center;padding:12px;">' +
+            '<div style="font-size:13px;font-weight:600;color:#fff;">' + p.title + '</div>' +
+            '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:4px;">open link ↗</div>' +
+            '</div></a>';
+        }
       }).join('');
     });
   })();
