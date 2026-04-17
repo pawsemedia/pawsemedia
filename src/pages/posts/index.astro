@@ -40,7 +40,7 @@ const formatDate = (date: Date) => {
         <h2 id="post-viewer-title" style="font-size: 22px; font-weight: 500; margin-bottom: 4px;"></h2>
         <div id="post-viewer-desc" style="font-size: 12px; color: rgba(255,255,255,0.35); margin-bottom: 16px;"></div>
         <img id="post-viewer-image" style="display:none; max-width:100%; border-radius: 6px; margin-bottom: 16px;" />
-        <div id="post-viewer-body" style="font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.6); white-space: pre-wrap;"></div>
+        <div id="post-viewer-body" class="post-body" style="font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.6);"></div>
       </div>
     </div>
   </section>
@@ -57,6 +57,47 @@ const formatDate = (date: Date) => {
     flex-direction: column;
     gap: 3px;
     margin-top: 3px;
+  }
+
+  .post-body {
+    white-space: pre-wrap;
+  }
+  .post-body img {
+    max-width: 100%;
+    border-radius: 6px;
+    display: block;
+    margin: 16px auto;
+  }
+  .post-body img.img-left {
+    float: left;
+    margin: 6px 16px 6px 0;
+    max-width: 50%;
+  }
+  .post-body img.img-right {
+    float: right;
+    margin: 6px 0 6px 16px;
+    max-width: 50%;
+  }
+  .post-body img.img-center {
+    display: block;
+    margin: 16px auto;
+  }
+  .post-body p {
+    margin: 12px 0;
+  }
+  .post-body::after {
+    content: '';
+    display: block;
+    clear: both;
+  }
+
+  @media (max-width: 520px) {
+    .post-body img.img-left,
+    .post-body img.img-right {
+      float: none;
+      margin: 16px auto;
+      max-width: 100%;
+    }
   }
 </style>
 
@@ -88,6 +129,42 @@ const formatDate = (date: Date) => {
       });
     }
 
+    function renderBody(text) {
+      if (!text) return '';
+      // escape HTML
+      var html = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      // render markdown images: ![alt](url) with optional align/width
+      // supports: ![](url), ![alignleft](url), ![alignright w=300](url), ![center](url), etc.
+      html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, function(match, alt, url) {
+        var cls = '';
+        var widthAttr = '';
+        var altText = alt;
+
+        // check for align keywords
+        if (/alignleft|left/i.test(alt)) cls = ' class="img-left"';
+        else if (/alignright|right/i.test(alt)) cls = ' class="img-right"';
+        else if (/aligncenter|center/i.test(alt)) cls = ' class="img-center"';
+
+        // check for width: w=300 or width=300
+        var w = alt.match(/w(?:idth)?=(\d+)/i);
+        if (w) widthAttr = ' style="width:' + w[1] + 'px;max-width:100%;"';
+
+        // clean alt text
+        altText = alt.replace(/align(left|right|center)|(^|\s)(left|right|center)(\s|$)|w(?:idth)?=\d+/gi, '').trim();
+
+        return '<img src="' + url + '" alt="' + altText + '"' + cls + widthAttr + ' />';
+      });
+
+      // render links: [text](url)
+      html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color:rgba(255,255,255,0.8);">$1</a>');
+
+      return html;
+    }
+
     function showPost(id) {
       var post = posts.find(function(p) { return p.id === id; });
       if (!post) return;
@@ -96,7 +173,7 @@ const formatDate = (date: Date) => {
       viewer.style.display = 'block';
       document.getElementById('post-viewer-title').textContent = post.title;
       document.getElementById('post-viewer-desc').textContent = post.description || '';
-      document.getElementById('post-viewer-body').textContent = post.body || '';
+      document.getElementById('post-viewer-body').innerHTML = renderBody(post.body || '');
       document.getElementById('post-viewer-date').textContent = new Date(post.pubDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toLowerCase();
       var imgEl = document.getElementById('post-viewer-image');
       if (post.image) {

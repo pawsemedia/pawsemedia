@@ -59,13 +59,28 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <div class="admin-label" id="post-form-label">create new post</div>
           <input id="post-title" class="admin-input" placeholder="post title" style="width: 100%; margin-bottom: 8px;" />
           <input id="post-desc" class="admin-input" placeholder="short description (optional)" style="width: 100%; margin-bottom: 8px;" />
-          <textarea id="post-body" class="admin-textarea" rows="10" placeholder="write your post here... (markdown supported — use ![](image-url) to embed images inline)"></textarea>
+
+          <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
+            <label class="btn" style="display:inline-block;cursor:pointer;font-size:9px;">
+              ＋ insert image
+              <input type="file" id="post-inline-image" accept="image/*" style="display:none;" />
+            </label>
+            <button class="btn" id="post-insert-left" type="button" style="font-size:9px;" title="align image left">⇤ left</button>
+            <button class="btn" id="post-insert-center" type="button" style="font-size:9px;" title="align image center">☰ center</button>
+            <button class="btn" id="post-insert-right" type="button" style="font-size:9px;" title="align image right">⇥ right</button>
+            <span id="post-inline-status" style="font-size: 10px; color: rgba(255,255,255,0.25); align-self: center;"></span>
+          </div>
+          <textarea id="post-body" class="admin-textarea" rows="14" placeholder="write your post here...
+
+use ![](image-url) to embed images
+![alignleft](url) or ![alignright](url) or ![aligncenter](url) to position
+![alignleft w=300](url) to set width in pixels"></textarea>
 
           <div style="margin-top: 10px;">
-            <div style="font-size: 10px; letter-spacing: 1px; color: rgba(255,255,255,0.3); margin-bottom: 6px; text-transform: uppercase;">cover image (optional)</div>
+            <div style="font-size: 10px; letter-spacing: 1px; color: rgba(255,255,255,0.3); margin-bottom: 6px; text-transform: uppercase;">cover image (optional — shown above post)</div>
             <input id="post-image" class="admin-input" placeholder="image url, or upload below" style="width: 100%; margin-bottom: 6px;" />
             <label class="btn" style="display:inline-block;cursor:pointer;font-size:9px;">
-              upload image
+              upload cover
               <input type="file" id="post-image-file" accept="image/*" style="display:none;" />
             </label>
             <span id="post-image-status" style="font-size: 10px; color: rgba(255,255,255,0.25); margin-left: 8px;"></span>
@@ -500,6 +515,57 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         }
       });
       e.target.value = '';
+    });
+
+    // inline image insert — uploads and inserts markdown at cursor
+    var pendingAlign = 'center';
+
+    function insertAtCursor(text) {
+      var ta = document.getElementById('post-body');
+      var start = ta.selectionStart;
+      var end = ta.selectionEnd;
+      var before = ta.value.substring(0, start);
+      var after = ta.value.substring(end);
+      // add newline before if not at start
+      var prefix = (before && !before.endsWith('\n')) ? '\n\n' : '';
+      var suffix = (after && !after.startsWith('\n')) ? '\n\n' : '';
+      ta.value = before + prefix + text + suffix + after;
+      var newPos = (before + prefix + text).length;
+      ta.focus();
+      ta.setSelectionRange(newPos, newPos);
+    }
+
+    document.getElementById('post-inline-image').addEventListener('change', function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var status = document.getElementById('post-inline-status');
+      status.textContent = 'uploading...';
+      pawseApi.upload(file).then(function(url) {
+        if (url) {
+          insertAtCursor('![align' + pendingAlign + '](' + url + ')');
+          status.textContent = 'inserted!';
+          setTimeout(function() { status.textContent = ''; }, 2000);
+        } else {
+          status.textContent = 'upload failed';
+        }
+      });
+      e.target.value = '';
+    });
+
+    document.getElementById('post-insert-left').addEventListener('click', function() {
+      pendingAlign = 'left';
+      var status = document.getElementById('post-inline-status');
+      status.textContent = 'next image → left';
+    });
+    document.getElementById('post-insert-center').addEventListener('click', function() {
+      pendingAlign = 'center';
+      var status = document.getElementById('post-inline-status');
+      status.textContent = 'next image → center';
+    });
+    document.getElementById('post-insert-right').addEventListener('click', function() {
+      pendingAlign = 'right';
+      var status = document.getElementById('post-inline-status');
+      status.textContent = 'next image → right';
     });
 
     // image url preview
