@@ -222,16 +222,33 @@ const { title = "Track Title", artist = "Artist" } = Astro.props;
       if (playlist.length > 0) {
         var today = new Date();
         var dayKey = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
-        var lastRotation = localStorage.getItem('pawse_rotation_day');
+        var rotationState = await pawseApi.get('rotation') || { day: null, played: [] };
 
-        if (lastRotation !== dayKey) {
-          var lastIdx = parseInt(localStorage.getItem('pawse_rotation_idx') || '-1');
-          var nextIdx = (lastIdx + 1) % playlist.length;
+        if (rotationState.day !== dayKey) {
+          var played = rotationState.played || [];
+          var nextIdx;
+
+          // filter out songs that have been played recently
+          var available = [];
+          for (var i = 0; i < playlist.length; i++) {
+            if (played.indexOf(i) === -1) available.push(i);
+          }
+
+          // if we've played them all, reset the played list
+          if (available.length === 0) {
+            played = [];
+            available = [];
+            for (var j = 0; j < playlist.length; j++) available.push(j);
+          }
+
+          // pick a random available song
+          nextIdx = available[Math.floor(Math.random() * available.length)];
+          played.push(nextIdx);
+
           var pick = playlist[nextIdx];
           song = { title: pick.title, artist: pick.artist, url: pick.url };
           await pawseApi.set('song', song).catch(function(){});
-          localStorage.setItem('pawse_rotation_day', dayKey);
-          localStorage.setItem('pawse_rotation_idx', String(nextIdx));
+          await pawseApi.set('rotation', { day: dayKey, played: played }).catch(function(){});
         }
       }
 

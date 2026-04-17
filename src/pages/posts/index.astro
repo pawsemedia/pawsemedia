@@ -39,6 +39,7 @@ const formatDate = (date: Date) => {
         <div id="post-viewer-date" style="font-size: 10px; letter-spacing: 2px; color: rgba(255,255,255,0.2); margin-bottom: 6px;"></div>
         <h2 id="post-viewer-title" style="font-size: 22px; font-weight: 500; margin-bottom: 4px;"></h2>
         <div id="post-viewer-desc" style="font-size: 12px; color: rgba(255,255,255,0.35); margin-bottom: 16px;"></div>
+        <img id="post-viewer-image" style="display:none; max-width:100%; border-radius: 6px; margin-bottom: 16px;" />
         <div id="post-viewer-body" style="font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.6); white-space: pre-wrap;"></div>
       </div>
     </div>
@@ -97,6 +98,13 @@ const formatDate = (date: Date) => {
       document.getElementById('post-viewer-desc').textContent = post.description || '';
       document.getElementById('post-viewer-body').textContent = post.body || '';
       document.getElementById('post-viewer-date').textContent = new Date(post.pubDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toLowerCase();
+      var imgEl = document.getElementById('post-viewer-image');
+      if (post.image) {
+        imgEl.src = post.image;
+        imgEl.style.display = 'block';
+      } else {
+        imgEl.style.display = 'none';
+      }
     }
 
     backBtn.addEventListener('click', function() {

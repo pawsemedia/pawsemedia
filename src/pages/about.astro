@@ -12,19 +12,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <div style="font-size: 16px; font-weight: 500; color: #fff;">pawse media</div>
         <div style="font-size: 11px; color: rgba(255,255,255,0.25);">est. 2026</div>
       </div>
-      <p id="about-text" style="font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.5);">
-        this is pawse media. a spot for posts, cool finds, videos, music, and whatever else.
-        run by me and my friends. that's about it.
-      </p>
+      <p id="about-text" style="font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.5); opacity: 0; transition: opacity 0.3s;"></p>
     </div>
   </section>
 </BaseLayout>
 
 <script is:inline>
-  (async function() {
-    try {
-      var text = await pawseApi.get('about');
-      if (text) document.getElementById('about-text').textContent = text;
-    } catch(e) {}
+  (function() {
+    var el = document.getElementById('about-text');
+    pawseApi.get('about').then(function(text) {
+      el.textContent = text || '';
+      el.style.opacity = '1';
+    });
   })();
 </script>

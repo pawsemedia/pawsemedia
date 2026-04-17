@@ -59,8 +59,23 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <div class="admin-label" id="post-form-label">create new post</div>
           <input id="post-title" class="admin-input" placeholder="post title" style="width: 100%; margin-bottom: 8px;" />
           <input id="post-desc" class="admin-input" placeholder="short description (optional)" style="width: 100%; margin-bottom: 8px;" />
-          <textarea id="post-body" class="admin-textarea" rows="10" placeholder="write your post here... (markdown supported)"></textarea>
-          <div style="display:flex;gap:6px;margin-top:10px;">
+          <textarea id="post-body" class="admin-textarea" rows="10" placeholder="write your post here... (markdown supported — use ![](image-url) to embed images inline)"></textarea>
+
+          <div style="margin-top: 10px;">
+            <div style="font-size: 10px; letter-spacing: 1px; color: rgba(255,255,255,0.3); margin-bottom: 6px; text-transform: uppercase;">cover image (optional)</div>
+            <input id="post-image" class="admin-input" placeholder="image url, or upload below" style="width: 100%; margin-bottom: 6px;" />
+            <label class="btn" style="display:inline-block;cursor:pointer;font-size:9px;">
+              upload image
+              <input type="file" id="post-image-file" accept="image/*" style="display:none;" />
+            </label>
+            <span id="post-image-status" style="font-size: 10px; color: rgba(255,255,255,0.25); margin-left: 8px;"></span>
+            <div id="post-image-preview" style="margin-top: 8px; display: none;">
+              <img id="post-image-preview-img" style="max-width: 100%; max-height: 120px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1);" />
+              <button class="btn" id="post-image-clear" style="font-size:9px;padding:3px 8px;margin-left:8px;">remove</button>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:6px;margin-top:14px;">
             <button class="btn" id="post-create-btn">publish post</button>
             <button class="btn" id="post-cancel-btn" style="display:none;">cancel edit</button>
           </div>
@@ -451,11 +466,49 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       document.getElementById('post-title').value = '';
       document.getElementById('post-desc').value = '';
       document.getElementById('post-body').value = '';
+      document.getElementById('post-image').value = '';
+      document.getElementById('post-image-preview').style.display = 'none';
+      document.getElementById('post-image-status').textContent = '';
       editIdEl.value = '';
       cancelBtn.style.display = 'none';
       formLabel.textContent = 'create new post';
       createBtn.textContent = 'publish post';
     }
+
+    // image upload handler
+    document.getElementById('post-image-file').addEventListener('change', function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var status = document.getElementById('post-image-status');
+      status.textContent = 'reading...';
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        document.getElementById('post-image').value = ev.target.result;
+        document.getElementById('post-image-preview-img').src = ev.target.result;
+        document.getElementById('post-image-preview').style.display = 'block';
+        status.textContent = 'ready';
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    });
+
+    // image url preview
+    document.getElementById('post-image').addEventListener('input', function() {
+      var val = this.value;
+      if (val) {
+        document.getElementById('post-image-preview-img').src = val;
+        document.getElementById('post-image-preview').style.display = 'block';
+      } else {
+        document.getElementById('post-image-preview').style.display = 'none';
+      }
+    });
+
+    // clear image button
+    document.getElementById('post-image-clear').addEventListener('click', function() {
+      document.getElementById('post-image').value = '';
+      document.getElementById('post-image-preview').style.display = 'none';
+      document.getElementById('post-image-status').textContent = '';
+    });
 
     cancelBtn.addEventListener('click', function() {
       clearPostForm();
@@ -465,6 +518,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       var title = document.getElementById('post-title').value;
       var desc = document.getElementById('post-desc').value;
       var body = document.getElementById('post-body').value;
+      var image = document.getElementById('post-image').value;
       if (!title) return;
 
       var posts = getData('posts') || [];
@@ -476,6 +530,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             posts[i].title = title;
             posts[i].description = desc;
             posts[i].body = body;
+            posts[i].image = image;
             break;
           }
         }
@@ -485,6 +540,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           title: title,
           description: desc,
           body: body,
+          image: image,
           pubDate: new Date().toISOString(),
           pinned: false
         });
@@ -655,10 +711,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           document.getElementById('post-title').value = p.title;
           document.getElementById('post-desc').value = p.description || '';
           document.getElementById('post-body').value = p.body || '';
+          document.getElementById('post-image').value = p.image || '';
+          if (p.image) {
+            document.getElementById('post-image-preview-img').src = p.image;
+            document.getElementById('post-image-preview').style.display = 'block';
+          } else {
+            document.getElementById('post-image-preview').style.display = 'none';
+          }
           editIdEl.value = String(p.id);
           cancelBtn.style.display = 'inline-block';
           formLabel.textContent = 'editing: ' + p.title;
           createBtn.textContent = 'save changes';
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         });
       });
 
