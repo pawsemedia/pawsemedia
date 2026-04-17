@@ -88,5 +88,24 @@ window.pawseApi = {
     try {
       await fetch(window.PAWSE_API + '/api/init', { method: 'POST' });
     } catch(e) {}
+  },
+
+  // upload a file to R2 — returns the public URL
+  async upload(file) {
+    try {
+      var res = await fetch(window.PAWSE_API + '/api/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': file.type || 'application/octet-stream',
+          'X-Pawse-Password': window._pawsePassword
+        },
+        body: file
+      });
+      var data = await res.json();
+      if (data.success) return data.url;
+      return null;
+    } catch(e) {
+      return null;
+    }
   }
 };

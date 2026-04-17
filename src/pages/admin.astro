@@ -127,7 +127,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             <option value="link-pics">link → pics</option>
           </select>
           <input id="corner-title" class="admin-input" placeholder="title" style="width: 100%; margin-bottom: 8px;" />
-          <input id="corner-url" class="admin-input" placeholder="url" style="width: 100%; margin-bottom: 8px;" />
+          <input id="corner-url" class="admin-input" placeholder="url (or upload below)" style="width: 100%; margin-bottom: 8px;" />
+          <div style="margin-bottom: 8px;">
+            <label class="btn" style="display:inline-block;cursor:pointer;font-size:9px;">
+              upload image/gif
+              <input type="file" id="corner-file" accept="image/*,video/*" style="display:none;" />
+            </label>
+            <span id="corner-upload-status" style="font-size: 10px; color: rgba(255,255,255,0.25); margin-left: 8px;"></span>
+          </div>
           <textarea id="corner-desc" class="admin-textarea" rows="2" placeholder="description (optional)"></textarea>
           <button class="btn" id="corner-add-btn" style="margin-top: 10px;">add to corner</button>
           <div class="admin-saved" id="corner-saved">added!</div>
@@ -475,20 +482,23 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       createBtn.textContent = 'publish post';
     }
 
-    // image upload handler
+    // image upload handler — uploads to R2
     document.getElementById('post-image-file').addEventListener('change', function(e) {
       var file = e.target.files[0];
       if (!file) return;
       var status = document.getElementById('post-image-status');
-      status.textContent = 'reading...';
-      var reader = new FileReader();
-      reader.onload = function(ev) {
-        document.getElementById('post-image').value = ev.target.result;
-        document.getElementById('post-image-preview-img').src = ev.target.result;
-        document.getElementById('post-image-preview').style.display = 'block';
-        status.textContent = 'ready';
-      };
-      reader.readAsDataURL(file);
+      status.textContent = 'uploading...';
+      pawseApi.upload(file).then(function(url) {
+        if (url) {
+          document.getElementById('post-image').value = url;
+          document.getElementById('post-image-preview-img').src = url;
+          document.getElementById('post-image-preview').style.display = 'block';
+          status.textContent = 'uploaded!';
+          setTimeout(function() { status.textContent = ''; }, 2000);
+        } else {
+          status.textContent = 'upload failed';
+        }
+      });
       e.target.value = '';
     });
 
@@ -568,6 +578,24 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       renderPlaylist();
     });
 
+    // corner file upload — uploads to R2 and fills URL
+    document.getElementById('corner-file').addEventListener('change', function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var status = document.getElementById('corner-upload-status');
+      status.textContent = 'uploading...';
+      pawseApi.upload(file).then(function(url) {
+        if (url) {
+          document.getElementById('corner-url').value = url;
+          status.textContent = 'uploaded!';
+          setTimeout(function() { status.textContent = ''; }, 2000);
+        } else {
+          status.textContent = 'upload failed';
+        }
+      });
+      e.target.value = '';
+    });
+
     // add to corner
     document.getElementById('corner-add-btn').addEventListener('click', function() {
       var type = document.getElementById('corner-type').value;
@@ -615,7 +643,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       }
     });
 
-    // pawcam file upload
+    // pawcam file upload — uploads to R2
     document.getElementById('pawcam-file').addEventListener('change', function(e) {
       var files = Array.from(e.target.files);
       var status = document.getElementById('pawcam-upload-status');
@@ -636,14 +664,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           return;
         }
 
-        var reader = new FileReader();
-        reader.onload = function(ev) {
-          gifs.push(ev.target.result);
-          try {
+        pawseApi.upload(file).then(function(url) {
+          if (url) {
+            gifs.push(url);
             setData('pawcam_gifs', gifs);
-          } catch(err) {
-            status.textContent = 'storage full! use URLs instead.';
-            gifs.pop();
           }
           loaded++;
           status.textContent = 'uploading ' + loaded + '/' + total + '...';
@@ -652,8 +676,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             renderPawcam();
             setTimeout(function() { status.textContent = ''; }, 3000);
           }
-        };
-        reader.readAsDataURL(file);
+        });
       });
 
       e.target.value = '';
