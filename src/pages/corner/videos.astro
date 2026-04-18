@@ -27,28 +27,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 <script is:inline>
   (function() {
-    // load Instagram embed script once
-    var igScriptLoaded = false;
-    function loadInstagramScript() {
-      if (igScriptLoaded) return;
-      igScriptLoaded = true;
-      var s = document.createElement('script');
-      s.src = 'https://www.instagram.com/embed.js';
-      s.async = true;
-      document.body.appendChild(s);
-    }
-
     pawseApi.get('corner_items').then(function(items) {
       items = items || [];
-      var videos = items.filter(function(i) { return i.type === 'video' || i.type === 'instagram' || i.type === 'link'; });
+      var videos = items.filter(function(i) { return i.type === 'video' || i.type === 'instagram' || i.type === 'link' || i.type === 'video-file'; });
       var grid = document.getElementById('videos-grid');
       if (videos.length === 0) {
         grid.innerHTML = '<div style="font-size:13px;color:rgba(255,255,255,0.3);grid-column:1/-1;">no videos yet — add some from the admin panel</div>';
         return;
       }
-
-      var hasInstagram = false;
-
       grid.innerHTML = videos.map(function(v) {
         var content = '';
 
@@ -59,10 +45,15 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           } else {
             content = '<a href="' + v.url + '" target="_blank" style="display:block;padding:20px;text-align:center;color:rgba(255,255,255,0.4);font-size:12px;">open video ↗</a>';
           }
+        } else if (v.type === 'video-file') {
+          content = '<div style="background:#000;"><video src="' + v.url + '" controls playsinline style="width:100%;max-height:500px;display:block;"></video></div>';
         } else if (v.type === 'instagram') {
-          hasInstagram = true;
-          // use Instagram's official blockquote embed — works with their embed.js script
-          content = '<blockquote class="instagram-media" data-instgrm-captioned data-instgrm-permalink="' + v.url + '" data-instgrm-version="14" style="background:#000; border:0; margin: 0; padding:0; width:100%; min-width:326px;"><a href="' + v.url + '" target="_blank" style="display:block;padding:40px 20px;text-align:center;color:rgba(255,255,255,0.4);font-size:12px;">loading instagram post... <br><span style="font-size:10px;">(click to view on instagram)</span></a></blockquote>';
+          var igMatch = v.url.match(/instagram\.com\/(p|reel)\/([^/?]+)/);
+          if (igMatch) {
+            content = '<div style="min-height:400px;"><iframe src="https://www.instagram.com/' + igMatch[1] + '/' + igMatch[2] + '/embed/" style="width:100%;min-height:400px;border:none;" allowfullscreen></iframe></div>';
+          } else {
+            content = '<a href="' + v.url + '" target="_blank" style="display:block;padding:20px;text-align:center;color:rgba(255,255,255,0.4);font-size:12px;">open on instagram ↗</a>';
+          }
         } else if (v.type === 'link') {
           content = '<a href="' + v.url + '" target="_blank" style="display:block;padding:20px;text-align:center;color:rgba(255,255,255,0.4);font-size:12px;">open link ↗</a>';
         }
@@ -73,8 +64,6 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           (v.description ? '<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:3px;">' + v.description + '</div>' : '') +
           '</div></div>';
       }).join('');
-
-      if (hasInstagram) loadInstagramScript();
     });
   })();
 </script>
