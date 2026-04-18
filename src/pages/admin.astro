@@ -60,23 +60,43 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <input id="post-title" class="admin-input" placeholder="post title" style="width: 100%; margin-bottom: 8px;" />
           <input id="post-desc" class="admin-input" placeholder="short description (optional)" style="width: 100%; margin-bottom: 8px;" />
 
-          <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
+          <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">
             <label class="btn" style="display:inline-block;cursor:pointer;font-size:9px;">
-              ＋ insert image
+              ＋ add image
               <input type="file" id="post-inline-image" accept="image/*" style="display:none;" />
             </label>
-            <button class="btn" id="post-insert-left" type="button" style="font-size:9px;" title="align image left">⇤ left</button>
-            <button class="btn" id="post-insert-center" type="button" style="font-size:9px;" title="align image center">☰ center</button>
-            <button class="btn" id="post-insert-right" type="button" style="font-size:9px;" title="align image right">⇥ right</button>
-            <span id="post-inline-status" style="font-size: 10px; color: rgba(255,255,255,0.25); align-self: center;"></span>
+            <span style="font-size: 10px; color: rgba(255,255,255,0.3);">click an image in the preview to resize/align</span>
+            <span id="post-inline-status" style="font-size: 10px; color: rgba(255,255,255,0.5); margin-left: auto;"></span>
           </div>
-          <textarea id="post-body" class="admin-textarea" rows="14" placeholder="write your post here...
 
-use ![](image-url) to embed images
-![alignleft](url) or ![alignright](url) or ![aligncenter](url) to position
-![alignleft w=300](url) to set width in pixels"></textarea>
+          <div class="editor-split">
+            <textarea id="post-body" class="admin-textarea" rows="18" placeholder="write your post here..."></textarea>
+            <div id="post-preview" class="post-preview">
+              <div style="font-size:10px;letter-spacing:2px;color:rgba(255,255,255,0.3);margin-bottom:10px;text-transform:uppercase;">live preview</div>
+              <div id="post-preview-body" class="post-body"></div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:10px;font-style:italic;">write in the box at left. click images here to edit them.</div>
+            </div>
+          </div>
 
-          <div style="margin-top: 10px;">
+          <!-- image edit popover -->
+          <div id="img-edit-popover" style="display:none;margin-top:10px;padding:12px;background:rgba(255,255,255,0.03);border-radius:6px;border:1px solid rgba(255,255,255,0.1);">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+              <span style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.4);">align:</span>
+              <button class="btn align-btn" data-align="left" style="font-size:9px;">⇤ left</button>
+              <button class="btn align-btn" data-align="center" style="font-size:9px;">☰ center</button>
+              <button class="btn align-btn" data-align="right" style="font-size:9px;">⇥ right</button>
+              <button class="btn align-btn" data-align="full" style="font-size:9px;">⇔ full</button>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <span style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.4);">size:</span>
+              <input type="range" id="img-width-slider" min="100" max="800" value="500" style="flex:1;min-width:120px;" />
+              <span id="img-width-val" style="font-size:10px;color:rgba(255,255,255,0.4);min-width:50px;">500px</span>
+              <button class="btn" id="img-width-auto" style="font-size:9px;">auto</button>
+              <button class="btn" id="img-remove" style="font-size:9px;color:rgba(255,150,150,0.8);">remove</button>
+            </div>
+          </div>
+
+          <div style="margin-top: 14px;">
             <div style="font-size: 10px; letter-spacing: 1px; color: rgba(255,255,255,0.3); margin-bottom: 6px; text-transform: uppercase;">cover image (optional — shown above post)</div>
             <input id="post-image" class="admin-input" placeholder="image url, or upload below" style="width: 100%; margin-bottom: 6px;" />
             <label class="btn" style="display:inline-block;cursor:pointer;font-size:9px;">
@@ -333,6 +353,102 @@ use ![](image-url) to embed images
     background: #1a1a1a;
     color: #fff;
   }
+
+  .editor-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 760px) {
+    .editor-split { grid-template-columns: 1fr; }
+  }
+
+  .post-preview {
+    padding: 12px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    overflow-y: auto;
+    max-height: 500px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: rgba(255,255,255,0.6);
+  }
+  .post-preview .post-body img {
+    cursor: pointer;
+    transition: outline 0.1s;
+  }
+  .post-preview .post-body img:hover {
+    outline: 2px solid rgba(100,200,255,0.5);
+    outline-offset: 2px;
+  }
+  .post-preview .post-body img.selected {
+    outline: 2px solid rgba(100,200,255,0.9);
+    outline-offset: 2px;
+  }
+
+  /* images in preview/post body */
+  .post-body {
+    position: relative;
+    white-space: pre-wrap;
+  }
+  .post-body img {
+    max-width: 100%;
+    border-radius: 6px;
+    display: block;
+    margin: 10px auto;
+  }
+  .post-body img.img-left {
+    float: left;
+    margin: 6px 12px 6px 0;
+  }
+  .post-body img.img-right {
+    float: right;
+    margin: 6px 0 6px 12px;
+  }
+  .post-body img.img-center {
+    display: block;
+    margin: 10px auto;
+  }
+  .post-body img.img-full {
+    display: block;
+    width: 100%;
+    margin: 10px auto;
+  }
+  .post-body::after {
+    content: '';
+    display: block;
+    clear: both;
+  }
+
+  .align-btn.active {
+    background: rgba(255,255,255,0.2) !important;
+    color: #fff !important;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+  }
 </style>
 
 <script is:inline>
@@ -495,6 +611,9 @@ use ![](image-url) to embed images
       cancelBtn.style.display = 'none';
       formLabel.textContent = 'create new post';
       createBtn.textContent = 'publish post';
+      selectedImgIdx = -1;
+      imgEditPopover.style.display = 'none';
+      if (typeof updatePreview === 'function') updatePreview();
     }
 
     // image upload handler — uploads to R2
@@ -517,24 +636,134 @@ use ![](image-url) to embed images
       e.target.value = '';
     });
 
-    // inline image insert — uploads and inserts markdown at cursor
-    var pendingAlign = 'center';
+    // ===== LIVE PREVIEW POST EDITOR =====
 
-    function insertAtCursor(text) {
-      var ta = document.getElementById('post-body');
-      var start = ta.selectionStart;
-      var end = ta.selectionEnd;
-      var before = ta.value.substring(0, start);
-      var after = ta.value.substring(end);
-      // add newline before if not at start
-      var prefix = (before && !before.endsWith('\n')) ? '\n\n' : '';
-      var suffix = (after && !after.startsWith('\n')) ? '\n\n' : '';
-      ta.value = before + prefix + text + suffix + after;
-      var newPos = (before + prefix + text).length;
-      ta.focus();
-      ta.setSelectionRange(newPos, newPos);
+    // render markdown body to HTML (same logic as post viewer)
+    function renderPostBody(text) {
+      if (!text) return '';
+      var html = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      // image token counter so we can identify each image uniquely
+      var imgIdx = 0;
+      html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, function(match, alt, url) {
+        var cls = '';
+        var widthAttr = '';
+        if (/alignleft/i.test(alt)) cls = ' class="img-left"';
+        else if (/alignright/i.test(alt)) cls = ' class="img-right"';
+        else if (/alignfull/i.test(alt)) cls = ' class="img-full"';
+        else if (/aligncenter/i.test(alt)) cls = ' class="img-center"';
+        var w = alt.match(/w=(\d+)/i);
+        if (w && !/alignfull/i.test(alt)) widthAttr = ' style="width:' + w[1] + 'px;max-width:100%;"';
+        var idAttr = ' data-img-idx="' + (imgIdx++) + '"';
+        return '<img src="' + url + '" alt=""' + cls + widthAttr + idAttr + ' />';
+      });
+
+      html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color:rgba(255,255,255,0.8);">$1</a>');
+      return html;
     }
 
+    var postBodyEl = document.getElementById('post-body');
+    var postPreviewEl = document.getElementById('post-preview-body');
+    var imgEditPopover = document.getElementById('img-edit-popover');
+    var widthSlider = document.getElementById('img-width-slider');
+    var widthVal = document.getElementById('img-width-val');
+    var selectedImgIdx = -1;
+
+    function updatePreview() {
+      postPreviewEl.innerHTML = renderPostBody(postBodyEl.value);
+      attachImageHandlers();
+      // re-select the currently-edited image if still there
+      if (selectedImgIdx >= 0) {
+        var img = postPreviewEl.querySelector('img[data-img-idx="' + selectedImgIdx + '"]');
+        if (img) img.classList.add('selected');
+        else {
+          selectedImgIdx = -1;
+          imgEditPopover.style.display = 'none';
+        }
+      }
+    }
+
+    function attachImageHandlers() {
+      postPreviewEl.querySelectorAll('img').forEach(function(img) {
+        img.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          postPreviewEl.querySelectorAll('img.selected').forEach(function(i) { i.classList.remove('selected'); });
+          img.classList.add('selected');
+          selectedImgIdx = parseInt(img.getAttribute('data-img-idx'));
+          imgEditPopover.style.display = 'block';
+
+          // load current state into controls
+          var cls = img.className || '';
+          var align = 'center';
+          if (cls.indexOf('img-left') >= 0) align = 'left';
+          else if (cls.indexOf('img-right') >= 0) align = 'right';
+          else if (cls.indexOf('img-full') >= 0) align = 'full';
+          document.querySelectorAll('.align-btn').forEach(function(b) {
+            b.classList.toggle('active', b.getAttribute('data-align') === align);
+          });
+
+          // get current width
+          var currentW = 500;
+          var styleW = (img.getAttribute('style') || '').match(/width:\s*(\d+)/);
+          if (styleW) currentW = parseInt(styleW[1]);
+          else currentW = img.naturalWidth || 500;
+          if (currentW > 800) currentW = 800;
+          widthSlider.value = currentW;
+          widthVal.textContent = currentW + 'px';
+        });
+      });
+    }
+
+    // modifies the Nth image markdown in the textarea
+    function modifyImageAt(idx, newAlign, newWidth) {
+      var text = postBodyEl.value;
+      var pattern = /!\[([^\]]*)\]\(([^)]+)\)/g;
+      var match;
+      var currentIdx = 0;
+      var start, end, url, oldAlt;
+
+      while ((match = pattern.exec(text)) !== null) {
+        if (currentIdx === idx) {
+          start = match.index;
+          end = match.index + match[0].length;
+          oldAlt = match[1];
+          url = match[2];
+          break;
+        }
+        currentIdx++;
+      }
+
+      if (start === undefined) return;
+
+      // build new alt/attributes string
+      var parts = [];
+      if (newAlign === 'remove') {
+        // remove this image entirely
+        var before = text.substring(0, start).replace(/\n*$/, '');
+        var after = text.substring(end).replace(/^\n*/, '');
+        postBodyEl.value = before + (before && after ? '\n\n' : '') + after;
+        selectedImgIdx = -1;
+        imgEditPopover.style.display = 'none';
+        updatePreview();
+        return;
+      }
+
+      if (newAlign === 'full') parts.push('alignfull');
+      else parts.push('align' + newAlign);
+
+      if (newWidth && newAlign !== 'full') parts.push('w=' + newWidth);
+
+      var newAttr = parts.join(' ');
+      var newMarkdown = '![' + newAttr + '](' + url + ')';
+      postBodyEl.value = text.substring(0, start) + newMarkdown + text.substring(end);
+      updatePreview();
+    }
+
+    // insert new image
     document.getElementById('post-inline-image').addEventListener('change', function(e) {
       var file = e.target.files[0];
       if (!file) return;
@@ -542,9 +771,20 @@ use ![](image-url) to embed images
       status.textContent = 'uploading...';
       pawseApi.upload(file).then(function(url) {
         if (url) {
-          insertAtCursor('![align' + pendingAlign + '](' + url + ')');
-          status.textContent = 'inserted!';
-          setTimeout(function() { status.textContent = ''; }, 2000);
+          var ta = postBodyEl;
+          var start = ta.selectionStart;
+          var before = ta.value.substring(0, start);
+          var after = ta.value.substring(start);
+          var prefix = (before && !before.endsWith('\n')) ? '\n\n' : '';
+          var suffix = (after && !after.startsWith('\n')) ? '\n\n' : '';
+          var md = '![aligncenter w=500](' + url + ')';
+          ta.value = before + prefix + md + suffix + after;
+          ta.focus();
+          var newPos = (before + prefix + md).length;
+          ta.setSelectionRange(newPos, newPos);
+          status.textContent = 'added! click it to resize';
+          setTimeout(function() { status.textContent = ''; }, 3000);
+          updatePreview();
         } else {
           status.textContent = 'upload failed';
         }
@@ -552,21 +792,62 @@ use ![](image-url) to embed images
       e.target.value = '';
     });
 
-    document.getElementById('post-insert-left').addEventListener('click', function() {
-      pendingAlign = 'left';
-      var status = document.getElementById('post-inline-status');
-      status.textContent = 'next image → left';
+    // alignment buttons
+    document.querySelectorAll('.align-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (selectedImgIdx < 0) return;
+        var align = btn.getAttribute('data-align');
+        var w = parseInt(widthSlider.value);
+        modifyImageAt(selectedImgIdx, align, align === 'full' ? null : w);
+      });
     });
-    document.getElementById('post-insert-center').addEventListener('click', function() {
-      pendingAlign = 'center';
-      var status = document.getElementById('post-inline-status');
-      status.textContent = 'next image → center';
+
+    // width slider
+    var widthTimer = null;
+    widthSlider.addEventListener('input', function() {
+      var w = parseInt(widthSlider.value);
+      widthVal.textContent = w + 'px';
+      clearTimeout(widthTimer);
+      widthTimer = setTimeout(function() {
+        if (selectedImgIdx < 0) return;
+        var active = document.querySelector('.align-btn.active');
+        var align = active ? active.getAttribute('data-align') : 'center';
+        if (align === 'full') return;
+        modifyImageAt(selectedImgIdx, align, w);
+      }, 50);
     });
-    document.getElementById('post-insert-right').addEventListener('click', function() {
-      pendingAlign = 'right';
-      var status = document.getElementById('post-inline-status');
-      status.textContent = 'next image → right';
+
+    document.getElementById('img-width-auto').addEventListener('click', function() {
+      if (selectedImgIdx < 0) return;
+      var active = document.querySelector('.align-btn.active');
+      var align = active ? active.getAttribute('data-align') : 'center';
+      if (align === 'full') return;
+      // remove width by passing null
+      var text = postBodyEl.value;
+      var pattern = /!\[([^\]]*)\]\(([^)]+)\)/g;
+      var match;
+      var currentIdx = 0;
+      while ((match = pattern.exec(text)) !== null) {
+        if (currentIdx === selectedImgIdx) {
+          var newMd = '![align' + align + '](' + match[2] + ')';
+          postBodyEl.value = text.substring(0, match.index) + newMd + text.substring(match.index + match[0].length);
+          updatePreview();
+          return;
+        }
+        currentIdx++;
+      }
     });
+
+    document.getElementById('img-remove').addEventListener('click', function() {
+      if (selectedImgIdx < 0) return;
+      modifyImageAt(selectedImgIdx, 'remove');
+    });
+
+    // update preview as user types
+    postBodyEl.addEventListener('input', updatePreview);
+
+    // initial preview
+    updatePreview();
 
     // image url preview
     document.getElementById('post-image').addEventListener('input', function() {
@@ -811,6 +1092,7 @@ use ![](image-url) to embed images
           cancelBtn.style.display = 'inline-block';
           formLabel.textContent = 'editing: ' + p.title;
           createBtn.textContent = 'save changes';
+          if (typeof updatePreview === 'function') updatePreview();
           window.scrollTo({ top: 0, behavior: 'smooth' });
         });
       });
