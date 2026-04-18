@@ -39,6 +39,16 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 <script is:inline>
   (function() {
+    var igScriptLoaded = false;
+    function loadInstagramScript() {
+      if (igScriptLoaded) return;
+      igScriptLoaded = true;
+      var s = document.createElement('script');
+      s.src = 'https://www.instagram.com/embed.js';
+      s.async = true;
+      document.body.appendChild(s);
+    }
+
     pawseApi.get('corner_items').then(function(items) {
       items = items || [];
       var pics = items.filter(function(i) { return i.type === 'image' || i.type === 'link-pics' || i.type === 'instagram-pics'; });
@@ -47,19 +57,17 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         grid.innerHTML = '<div style="font-size:13px;color:rgba(255,255,255,0.3);grid-column:1/-1;">no pics yet — add some from the admin panel</div>';
         return;
       }
+
+      var hasInstagram = false;
+
       grid.innerHTML = pics.map(function(p) {
         if (p.type === 'image') {
           return '<a href="' + p.url + '" target="_blank" style="display:block;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);transition:border-color 0.2s;">' +
             '<img src="' + p.url + '" alt="' + p.title + '" style="width:100%;height:auto;display:block;" />' +
             '</a>';
         } else if (p.type === 'instagram-pics') {
-          var igMatch = p.url.match(/instagram\.com\/(p|reel)\/([^/?]+)/);
-          if (igMatch) {
-            return '<div class="card" style="overflow:hidden;"><div style="min-height:400px;"><iframe src="https://www.instagram.com/' + igMatch[1] + '/' + igMatch[2] + '/embed/" style="width:100%;min-height:400px;border:none;" allowfullscreen></iframe></div>' +
-              '<div style="padding:8px 12px;font-size:12px;font-weight:600;color:#fff;">' + p.title + '</div></div>';
-          }
-          return '<a href="' + p.url + '" target="_blank" class="card" style="display:flex;align-items:center;justify-content:center;padding:40px 12px;text-decoration:none;">' +
-            '<div style="text-align:center;"><div style="font-size:13px;font-weight:600;color:#fff;">' + p.title + '</div><div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:4px;">open on instagram ↗</div></div></a>';
+          hasInstagram = true;
+          return '<blockquote class="instagram-media" data-instgrm-captioned data-instgrm-permalink="' + p.url + '" data-instgrm-version="14" style="background:#000; border:0; margin: 0; padding:0; width:100%; min-width:326px;"><a href="' + p.url + '" target="_blank" style="display:block;padding:40px 20px;text-align:center;color:rgba(255,255,255,0.4);font-size:12px;">loading... <br><span style="font-size:10px;">(click to view on instagram)</span></a></blockquote>';
         } else {
           return '<a href="' + p.url + '" target="_blank" class="card" style="display:flex;align-items:center;justify-content:center;padding:40px 12px;text-decoration:none;">' +
             '<div style="text-align:center;">' +
@@ -68,6 +76,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             '</div></a>';
         }
       }).join('');
+
+      if (hasInstagram) loadInstagramScript();
     });
   })();
 </script>
